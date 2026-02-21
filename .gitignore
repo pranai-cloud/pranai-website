@@ -21,6 +21,7 @@
 # misc
 .DS_Store
 *.pem
+.embold
 
 # debug
 npm-debug.log*
