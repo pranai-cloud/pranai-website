@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   basePath: "/pranai",
+  skipTrailingSlashRedirect: true,
   async headers() {
     return [
       {

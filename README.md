@@ -63,7 +63,7 @@ GROQ_API_KEY=
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000/pranai](http://localhost:3000/pranai) in your browser.
 
 ### Production Build
 
