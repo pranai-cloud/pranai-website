@@ -54,14 +54,17 @@ export function PranNavbar() {
           }`}
         >
           <div className="flex h-14 items-center justify-between px-5 sm:px-6">
-            <a href="/" className="relative z-10 flex items-center gap-0.5">
-              <span className="text-xl font-black tracking-tighter text-primary">
-                pran
-              </span>
-              <span className="text-xl font-black tracking-tighter bg-gradient-to-r from-pran-orange to-pran-orange-light bg-clip-text text-transparent">
-                .ai
-              </span>
-            </a>
+            <svg viewBox="0 0 160 40" className="relative z-10 h-7 w-auto" aria-label="pran.ai">
+              <defs>
+                <linearGradient id="nav-orange-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f97316"/>
+                  <stop offset="100%" stopColor="#fb923c"/>
+                </linearGradient>
+              </defs>
+              <text x="0" y="30" fontFamily="var(--font-space-grotesk), 'Space Grotesk', sans-serif" fontWeight="700" fontSize="28" letterSpacing="-1.4">
+                <tspan fill="#1A1A1A">pran</tspan><tspan fill="url(#nav-orange-grad)">.ai</tspan>
+              </text>
+            </svg>
 
             <div className="hidden lg:flex items-center gap-1">
               {NAV_LINKS.map((link) => (
@@ -118,14 +121,17 @@ export function PranNavbar() {
               className="absolute top-0 right-0 h-full w-full max-w-sm bg-surface flex flex-col shadow-2xl"
             >
               <div className="flex items-center justify-between px-6 h-16">
-                <a href="/" className="flex items-center gap-0.5">
-                  <span className="text-xl font-black tracking-tighter text-primary">
-                    pran
-                  </span>
-                  <span className="text-xl font-black tracking-tighter bg-gradient-to-r from-pran-orange to-pran-orange-light bg-clip-text text-transparent">
-                    .ai
-                  </span>
-                </a>
+                <svg viewBox="0 0 160 40" className="h-7 w-auto" aria-label="pran.ai">
+                  <defs>
+                    <linearGradient id="mobile-orange-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#f97316"/>
+                      <stop offset="100%" stopColor="#fb923c"/>
+                    </linearGradient>
+                  </defs>
+                  <text x="0" y="30" fontFamily="var(--font-space-grotesk), 'Space Grotesk', sans-serif" fontWeight="700" fontSize="28" letterSpacing="-1.4">
+                    <tspan fill="#1A1A1A">pran</tspan><tspan fill="url(#mobile-orange-grad)">.ai</tspan>
+                  </text>
+                </svg>
                 <button
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center justify-center h-10 w-10 rounded-full border border-black/[0.08] bg-black/[0.03]"

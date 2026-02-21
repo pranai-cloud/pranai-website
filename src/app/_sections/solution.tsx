@@ -1,7 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Headphones, Target, CheckCircle2 } from "lucide-react";
+import {
+  Headphones,
+  Target,
+  CheckCircle2,
+  Palette,
+  Share2,
+  Lock,
+  Phone,
+  Wrench,
+  Filter,
+  UserSearch,
+  type LucideIcon,
+} from "lucide-react";
 import {
   sectionHeader,
   staggerContainer,
@@ -22,6 +34,78 @@ const SDR_FEATURES = [
   "Books meetings directly on your team's calendar",
   "Follows up persistently without being pushy",
 ];
+
+interface ComingSoonRole {
+  icon: LucideIcon;
+  badge: string;
+  title: string;
+  description: string;
+}
+
+const COMING_SOON_ROLES: ComingSoonRole[] = [
+  {
+    icon: Phone,
+    badge: "Front Desk Receptionist",
+    title: "Your 24/7 front desk",
+    description:
+      "Greets callers, routes inquiries, and schedules appointments — in any language.",
+  },
+  {
+    icon: Wrench,
+    badge: "Technical Support",
+    title: "Level-1 triage, automated",
+    description:
+      "Walks users through troubleshooting steps and escalates complex issues with full context.",
+  },
+  {
+    icon: Filter,
+    badge: "Lead Qualifier",
+    title: "Score & route every lead",
+    description:
+      "Qualifies inbound leads against your criteria and books meetings for your sales team.",
+  },
+  {
+    icon: Palette,
+    badge: "UI/UX Designer",
+    title: "Design systems on demand",
+    description:
+      "AI-generated wireframes, user flows, and design audits — trained on your brand guidelines.",
+  },
+  {
+    icon: Share2,
+    badge: "Social Media Manager",
+    title: "Content & engagement, automated",
+    description:
+      "AI-crafted posts, reply management, and scheduling across platforms — always on-brand.",
+  },
+  {
+    icon: UserSearch,
+    badge: "HR Recruiter",
+    title: "Hire faster, screen smarter",
+    description:
+      "Screens resumes, conducts initial outreach, and schedules interviews autonomously.",
+  },
+];
+
+function ComingSoonCard({ icon: Icon, badge, title, description }: ComingSoonRole) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 lg:p-8 shadow-sm h-full">
+      <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-pran-orange/[0.04] blur-2xl" />
+      <div className="relative">
+        <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-pran-orange/20 bg-pran-orange/10 px-3.5 py-1 text-sm font-medium text-pran-orange">
+          <Icon className="h-4 w-4" />
+          {badge}
+        </div>
+        <h3 className="mb-2 text-lg font-bold text-primary">{title}</h3>
+        <p className="text-sm leading-relaxed text-secondary">{description}</p>
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-pran-orange/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-pran-orange">
+          <Lock className="h-3 w-3" />
+          Coming Soon
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RoleCard({
   icon: Icon,
@@ -95,6 +179,22 @@ export function SolutionSection() {
             features={SDR_FEATURES}
           />
         </motion.div>
+
+        <motion.div
+          {...createViewportAnimation(sectionHeader)}
+          className="mt-20 mb-10 text-center"
+        >
+          <div className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] bg-stone-50 px-4 py-1.5 text-xs font-mono uppercase tracking-[0.12em] text-secondary">
+            <Lock className="h-3.5 w-3.5" />
+            Coming Soon to the Workforce
+          </div>
+        </motion.div>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {COMING_SOON_ROLES.map((role) => (
+            <ComingSoonCard key={role.badge} {...role} />
+          ))}
+        </div>
       </div>
     </section>
   );

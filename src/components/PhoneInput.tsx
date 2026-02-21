@@ -80,6 +80,7 @@ interface PhoneInputProps {
   defaultCountry?: string;
   inputClassName?: string;
   errors?: string[];
+  onChange?: (value: string) => void;
 }
 
 export function PhoneInput({
@@ -89,6 +90,7 @@ export function PhoneInput({
   defaultCountry = '+91',
   inputClassName = '',
   errors,
+  onChange,
 }: PhoneInputProps) {
   const [selected, setSelected] = useState(
     () => COUNTRIES.find((c) => c.dial === defaultCountry) ?? COUNTRIES[0],
@@ -146,6 +148,7 @@ export function PhoneInput({
           type="tel"
           required={required}
           placeholder="98765 43210"
+          onChange={(e) => onChange?.(e.target.value)}
           className={`w-full rounded-r-lg border border-black/[0.08] bg-white px-4 py-3 text-sm text-[#1A1A1A] placeholder:text-[#A3A3A3] outline-none transition-all focus:border-[#0D9488]/40 focus:ring-2 focus:ring-[#0D9488]/10 ${inputClassName}`}
         />
       </div>

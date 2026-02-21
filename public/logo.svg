@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" width="160" height="40">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&amp;display=swap');
+    </style>
+    <linearGradient id="orange-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#fb923c"/>
+    </linearGradient>
+  </defs>
+  <text x="0" y="30" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="28" letter-spacing="-1.4">
+    <tspan fill="#1A1A1A">pran</tspan><tspan fill="url(#orange-grad)">.ai</tspan>
+  </text>
+</svg>

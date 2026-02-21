@@ -13,11 +13,14 @@ import {
 
 interface PranaiNurtureEmailProps {
   prospectName: string;
+  companyName: string;
   aiMessage: string;
-  aiRole: string;
+  aiRoles: string[];
 }
 
-export function PranaiNurtureEmail({ prospectName, aiMessage, aiRole }: PranaiNurtureEmailProps) {
+export function PranaiNurtureEmail({ prospectName, companyName, aiMessage, aiRoles }: PranaiNurtureEmailProps) {
+  const rolesDisplay = aiRoles.length > 0 ? aiRoles.join(', ') : 'AI agent';
+
   return (
     <Html lang="en">
       <Head>
@@ -42,7 +45,7 @@ export function PranaiNurtureEmail({ prospectName, aiMessage, aiRole }: PranaiNu
           fontStyle="normal"
         />
       </Head>
-      <Preview>Pran.ai — Your AI {aiRole} is almost ready</Preview>
+      <Preview>Pran.ai — Your AI {rolesDisplay} {aiRoles.length === 1 ? 'agent is' : 'agents are'} almost ready</Preview>
       <Body style={body}>
         <Container style={container}>
           <Section style={header}>
@@ -57,6 +60,21 @@ export function PranaiNurtureEmail({ prospectName, aiMessage, aiRole }: PranaiNu
           <Section style={content}>
             <Text style={greeting}>Hi {prospectName || 'there'},</Text>
             <Text style={messageText}>{aiMessage}</Text>
+          </Section>
+
+          <Section style={rolesSection}>
+            <Text style={rolesSectionTitle}>Roles requested for {companyName}</Text>
+            <table cellPadding={0} cellSpacing={0} style={{ width: '100%' }}>
+              <tbody>
+                {aiRoles.map((r) => (
+                  <tr key={r}>
+                    <td style={roleBadge}>
+                      <span style={roleDot}>●</span> {r}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </Section>
 
           <Section style={ctaSection}>
@@ -156,6 +174,32 @@ const messageText = {
   lineHeight: '1.7',
   margin: '0 0 8px',
   whiteSpace: 'pre-line' as const,
+} as const;
+
+const rolesSection = {
+  padding: '0 40px 8px',
+} as const;
+
+const rolesSectionTitle = {
+  color: '#999999',
+  fontSize: '11px',
+  fontWeight: 600,
+  letterSpacing: '0.06em',
+  margin: '0 0 10px',
+  textTransform: 'uppercase' as const,
+} as const;
+
+const roleBadge = {
+  color: '#333333',
+  fontSize: '14px',
+  lineHeight: '1.5',
+  padding: '4px 0',
+} as const;
+
+const roleDot = {
+  color: '#f97316',
+  fontSize: '10px',
+  marginRight: '8px',
 } as const;
 
 const ctaSection = {

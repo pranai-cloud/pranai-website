@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="7" fill="#FAFAF8"/>
+  <defs>
+    <linearGradient id="ig" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#fb923c"/>
+    </linearGradient>
+  </defs>
+  <text x="16" y="24" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="22" letter-spacing="-1" fill="url(#ig)">p.</text>
+</svg>

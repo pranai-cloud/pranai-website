@@ -2,19 +2,41 @@
 
 import { useState, useEffect, useActionState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import {
+  Loader2,
+  Headphones,
+  Target,
+  Phone,
+  Wrench,
+  Filter,
+  Share2,
+  Palette,
+  UserSearch,
+  type LucideIcon,
+} from 'lucide-react';
 import {
   submitPranaiLead,
   type PranaiLeadFormState,
 } from '@/actions/submit-pranai-lead';
 import { PhoneInput } from '@/components/PhoneInput';
 
-const AI_ROLES = [
-  { value: '', label: 'Select the AI role you need' },
-  { value: 'customer-support-representative', label: 'Customer Support Representative' },
-  { value: 'business-development-representative', label: 'Business Development Representative' },
-  { value: 'custom', label: 'Custom / Other' },
-] as const;
+interface AIRole {
+  value: string;
+  label: string;
+  icon: LucideIcon;
+  waitlist?: boolean;
+}
+
+const AI_ROLES: AIRole[] = [
+  { value: 'customer-support-representative', label: 'Customer Support Rep', icon: Headphones },
+  { value: 'business-development-representative', label: 'Business Dev Rep', icon: Target },
+  { value: 'front-desk-receptionist', label: 'Front Desk Receptionist', icon: Phone },
+  { value: 'technical-support-engineer', label: 'Technical Support', icon: Wrench },
+  { value: 'lead-qualifier', label: 'Lead Qualifier', icon: Filter },
+  { value: 'social-media-manager-waitlist', label: 'Social Media Manager', icon: Share2, waitlist: true },
+  { value: 'ui-ux-designer-waitlist', label: 'UI/UX Designer', icon: Palette, waitlist: true },
+  { value: 'hr-recruiter-waitlist', label: 'HR Recruiter', icon: UserSearch, waitlist: true },
+];
 
 const initialState: PranaiLeadFormState = {
   success: false,
@@ -41,7 +63,15 @@ export function LeadCaptureForm() {
 function FormInner({ onReset }: { onReset: () => void }) {
   const [state, formAction] = useActionState(submitPranaiLead, initialState);
   const [isPending, startTransition] = useTransition();
-  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [fields, setFields] = useState({ name: '', email: '', phone: '', company: '' });
+
+  const isFormReady =
+    fields.name.trim() !== '' &&
+    fields.email.trim() !== '' &&
+    fields.phone.trim() !== '' &&
+    fields.company.trim() !== '' &&
+    selectedRoles.length > 0;
 
   useEffect(() => {
     if (!state.success) return;
@@ -166,6 +196,8 @@ function FormInner({ onReset }: { onReset: () => void }) {
             type="text"
             required
             placeholder="Jane Smith"
+            value={fields.name}
+            onChange={(e) => setFields((f) => ({ ...f, name: e.target.value }))}
             className={inputClasses}
           />
           <FieldError errors={state.errors?.name} />
@@ -180,13 +212,20 @@ function FormInner({ onReset }: { onReset: () => void }) {
               type="email"
               required
               placeholder="jane@company.com"
+              value={fields.email}
+              onChange={(e) => setFields((f) => ({ ...f, email: e.target.value }))}
               className={inputClasses}
             />
             <FieldError errors={state.errors?.email} />
           </div>
           <div>
             <label htmlFor="pranai-phone" className={labelClasses}>Phone Number</label>
-            <PhoneInput id="pranai-phone" name="phone" errors={state.errors?.phone} />
+            <PhoneInput
+              id="pranai-phone"
+              name="phone"
+              errors={state.errors?.phone}
+              onChange={(v) => setFields((f) => ({ ...f, phone: v }))}
+            />
           </div>
         </div>
 
@@ -198,42 +237,55 @@ function FormInner({ onReset }: { onReset: () => void }) {
             type="text"
             required
             placeholder="Acme Inc."
+            value={fields.company}
+            onChange={(e) => setFields((f) => ({ ...f, company: e.target.value }))}
             className={inputClasses}
           />
           <FieldError errors={state.errors?.company} />
         </div>
 
         <div>
-          <label htmlFor="pranai-role" className={labelClasses}>Which AI Role do you need?</label>
-          <select
-            id="pranai-role"
-            name={selectedRole === 'custom' ? '_ai_role_select' : 'ai_role'}
-            required
-            value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-            className={`${inputClasses} appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22none%22%20stroke%3D%22%23525252%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22M4%206l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_12px_center] bg-no-repeat pr-10`}
-          >
-            {AI_ROLES.map((opt) => (
-              <option key={opt.value} value={opt.value} disabled={opt.value === ''}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          {selectedRole === 'custom' && (
-            <input
-              name="ai_role"
-              type="text"
-              required
-              placeholder="e.g. Front Desk Receptionist"
-              className={`${inputClasses} mt-2`}
-            />
-          )}
+          <label className={labelClasses}>
+            Which AI Roles do you need?
+            <span className="ml-1.5 normal-case tracking-normal text-stone-400 font-normal">(select all that apply)</span>
+          </label>
+          <input type="hidden" name="ai_role" value={selectedRoles.join(', ')} />
+          <div className="flex flex-wrap gap-2">
+            {AI_ROLES.map((role) => {
+              const Icon = role.icon;
+              const isSelected = selectedRoles.includes(role.value);
+              const toggle = () =>
+                setSelectedRoles((prev) =>
+                  prev.includes(role.value)
+                    ? prev.filter((v) => v !== role.value)
+                    : [...prev, role.value],
+                );
+              return (
+                <button
+                  key={role.value}
+                  type="button"
+                  onClick={toggle}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-[13px] font-medium transition-all ${
+                    isSelected
+                      ? 'border-pran-orange/40 bg-pran-orange/10 text-pran-orange ring-2 ring-pran-orange/10'
+                      : 'border-black/[0.08] bg-white text-secondary hover:border-black/[0.14] hover:bg-stone-50'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  {role.label}
+                  {role.waitlist && (
+                    <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-stone-400">Soon</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
           <FieldError errors={state.errors?.ai_role} />
         </div>
 
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || !isFormReady}
           className="w-full rounded-lg bg-pran-orange px-6 py-3.5 text-sm font-bold text-white tracking-wide transition-all hover:bg-pran-orange-light disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isPending ? (
