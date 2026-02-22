@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { CookieConsent } from "@/components/cookie-consent";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -35,6 +36,86 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://pranai.cloud/#organization",
+      name: "Fluxenta Technologies",
+      url: "https://fluxenta.dev",
+      logo: "https://pranai.cloud/icon.svg",
+      email: "founder@pranai.cloud",
+      telephone: "+919304117405",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress:
+          "302, Sreenidhi Pristine, (9/10), Kodichikkanahalli Main Rd, Seenappa Layout, Bommanahalli",
+        addressLocality: "Bengaluru",
+        addressRegion: "Karnataka",
+        postalCode: "560076",
+        addressCountry: "IN",
+      },
+      sameAs: ["https://www.linkedin.com/company/111233174"],
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://pranai.cloud/#website",
+      url: "https://pranai.cloud",
+      name: "Pran.ai",
+      description:
+        "AI-powered digital workforce for India. Deploy native-speaking voice and chat agents for customer support and sales.",
+      publisher: { "@id": "https://pranai.cloud/#organization" },
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://pranai.cloud/#product",
+      name: "Pran.ai",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      description:
+        "Deploy native-speaking, hyper-realistic AI voice and chat agents into your business. Customer support and sales development on autopilot.",
+      offers: {
+        "@type": "AggregateOffer",
+        priceCurrency: "INR",
+        lowPrice: "0",
+        offerCount: "3",
+      },
+      provider: { "@id": "https://pranai.cloud/#organization" },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://pranai.cloud/#faq",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "Does it sound like a robot?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "No. Pran.ai uses state-of-the-art regional voice models that sound indistinguishable from a native speaker. We fine-tune on real conversational data so intonation, pauses, and fillers feel completely natural.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What if the AI doesn't know the answer?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "It gracefully escalates the call or chat to your human team with a full transcript and context summary — so your agents pick up right where the AI left off, with zero repetition for the customer.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How do we integrate it?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Zero coding required. We provide a drop-in phone number and a lightweight JavaScript widget for your website. Most teams go live the same day.",
+          },
+        },
+      ],
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,10 +123,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         className={`${spaceGrotesk.variable} font-[family-name:var(--font-space-grotesk)] antialiased`}
       >
         {children}
+        <CookieConsent />
         <Analytics />
       </body>
     </html>

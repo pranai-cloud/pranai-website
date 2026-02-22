@@ -9,6 +9,7 @@ import {
   Text,
   Button,
   Hr,
+  Link,
 } from '@react-email/components';
 
 interface PranaiNurtureEmailProps {
@@ -100,9 +101,24 @@ export function PranaiNurtureEmail({ prospectName, companyName, aiMessage, aiRol
 
           <Section style={footer}>
             <Text style={footerText}>
-              Pran.ai by Fluxenta Technologies · India
-              <br />
-              You received this because you submitted a demo request on pran.ai
+              Pran.ai by Fluxenta Technologies · Bengaluru, India
+            </Text>
+            <Text style={footerDisclosure}>
+              This email was generated using AI and sent automatically because
+              you submitted a demo request on{' '}
+              <Link href="https://pranai.cloud" style={footerLink}>pranai.cloud</Link>.
+              Your information is stored securely on our cloud infrastructure
+              and processed in accordance with our{' '}
+              <Link href="https://pranai.cloud/privacy-policy" style={footerLink}>Privacy Policy</Link>.
+              You may also be contacted by our AI voice agents at the phone
+              number you provided.
+            </Text>
+            <Text style={footerTextSmall}>
+              <Link href="https://pranai.cloud/terms-of-service" style={footerLink}>Terms</Link>
+              {' · '}
+              <Link href="https://pranai.cloud/privacy-policy" style={footerLink}>Privacy</Link>
+              {' · '}
+              <Link href="https://pranai.cloud/contact" style={footerLink}>Contact</Link>
             </Text>
           </Section>
         </Container>
@@ -234,6 +250,27 @@ const footerText = {
   color: '#999999',
   fontSize: '11px',
   lineHeight: '1.6',
+  margin: '0 0 12px',
+  textAlign: 'center' as const,
+} as const;
+
+const footerDisclosure = {
+  color: '#AAAAAA',
+  fontSize: '10px',
+  lineHeight: '1.6',
+  margin: '0 0 12px',
+  textAlign: 'center' as const,
+} as const;
+
+const footerTextSmall = {
+  color: '#AAAAAA',
+  fontSize: '10px',
+  lineHeight: '1.6',
   margin: '0',
   textAlign: 'center' as const,
+} as const;
+
+const footerLink = {
+  color: '#999999',
+  textDecoration: 'underline',
 } as const;

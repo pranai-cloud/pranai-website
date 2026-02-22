@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       : `Pran.ai — Your AI ${rolesDisplay} Demo Request`;
 
     await resend.emails.send({
-      from: 'Pran.ai by Fluxenta <anurag@fluxenta.dev>',
+      from: 'Pran.ai <founder@pranai.cloud>',
       to: email,
       subject,
       react: PranaiNurtureEmail({

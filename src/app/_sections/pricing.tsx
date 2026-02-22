@@ -41,6 +41,7 @@ interface Plan {
   icon: typeof Zap;
   baseUSD: number | null;
   period: string;
+  platformFeeUSD?: number;
   description: string;
   highlight: boolean;
   badge?: string;
@@ -54,58 +55,53 @@ const PLANS: Plan[] = [
     icon: Zap,
     baseUSD: 0.10,
     period: "/min",
-    description: "On-demand pricing — only pay for the minutes you use. No commitments.",
+    platformFeeUSD: 19,
+    description: "On-demand pricing with no commitments — only pay for the call minutes you use.",
     highlight: false,
     features: [
       "Billed per minute of call time",
-      "No monthly minimums",
-      "7 Indian languages",
+      "Indian languages included",
       "Email & chat channels",
       "HD voice with <500ms latency",
-      "Business hours support",
       "Basic analytics dashboard",
     ],
-    cta: "Get Started",
+    cta: "Start Free Trial",
   },
   {
-    name: "Growth",
+    name: "Scale",
     icon: Sparkles,
     baseUSD: 949,
     period: "/mo",
-    description: "Scale your AI workforce with advanced capabilities.",
+    description: "Scale your AI workforce with advanced capabilities and global reach.",
     highlight: true,
     badge: "Most Popular",
     features: [
-      "Up to 3 AI agents",
       "Up to 10,000 conversations/mo",
-      "9 Indian Languages & 40 Global Languages",
-      "Voice, chat & WhatsApp",
+      "40+ global languages",
+      "Omnichannel — voice, chat & WhatsApp",
       "HD voice with <500ms latency",
-      "Priority support with SLA",
+      "Priority support",
       "Advanced analytics & reporting",
-      "CRM integrations (Salesforce, HubSpot)",
-      "Custom escalation workflows",
+      "Custom automation workflows",
+      "Salesforce integration",
     ],
-    cta: "Get Started",
+    cta: "Start Free Trial",
   },
   {
     name: "Enterprise",
     icon: Building2,
     baseUSD: null,
     period: "",
-    description: "Tailored solutions for large-scale deployments.",
+    description: "Custom pricing for large-scale deployments with dedicated infrastructure.",
     highlight: false,
     features: [
-      "Unlimited AI agents",
-      "Unlimited conversations",
-      "All languages + custom dialects",
+      "Unlimited agents & conversations",
       "Omnichannel deployment",
       "Ultra-low latency, dedicated infra",
       "24/7 dedicated account manager",
       "Custom model fine-tuning",
-      "On-premise deployment option",
-      "SOC 2 & ISO compliance",
       "Custom SLA guarantees",
+      "SOC 2 & ISO compliance",
     ],
     cta: "Talk to Sales",
   },
@@ -226,6 +222,11 @@ export function PricingSection() {
                       </span>
                     )}
                   </div>
+                  {plan.platformFeeUSD && (
+                    <p className="mt-1.5 text-sm font-medium text-secondary">
+                      + {formatPrice(plan.platformFeeUSD, currency)}/mo platform fee
+                    </p>
+                  )}
                   <p className="mt-2 text-sm leading-relaxed text-secondary">
                     {plan.description}
                   </p>
@@ -259,13 +260,15 @@ export function PricingSection() {
           })}
         </motion.div>
 
-        <motion.p
+        <motion.div
           {...createViewportAnimation(sectionHeader)}
-          className="mt-10 text-center text-sm text-secondary"
+          className="mt-10 text-center"
         >
-          All plans include a 14-day free trial · No credit card required ·
-          Cancel anytime
-        </motion.p>
+          <p className="inline-flex items-center gap-2 rounded-full border border-pran-orange/20 bg-pran-orange/[0.04] px-5 py-2.5 text-sm font-medium text-pran-orange">
+            <Sparkles className="size-4" />
+            14-day free trial on all plans · No credit card required
+          </p>
+        </motion.div>
       </div>
     </section>
   );

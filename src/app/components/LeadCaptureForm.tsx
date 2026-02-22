@@ -298,8 +298,14 @@ function FormInner({ onReset }: { onReset: () => void }) {
           )}
         </button>
 
-        <p className="text-center text-[10px] text-stone-muted tracking-wide">
-          Your data is encrypted and never sold to third parties.
+        <p className="text-center text-[10.5px] leading-relaxed text-stone-muted">
+          By submitting, you agree to our{' '}
+          <a href="/privacy-policy" className="text-secondary underline hover:text-primary">Privacy Policy</a>
+          {' '}and{' '}
+          <a href="/terms-of-service" className="text-secondary underline hover:text-primary">Terms of Service</a>.
+          Your data is stored securely on our cloud infrastructure. You will
+          receive an AI-generated follow-up email and may be contacted by our
+          AI voice agents. We never sell your data to third parties.
         </p>
       </form>
     </motion.div>
