@@ -150,7 +150,7 @@ export default function OGImage() {
                         display: "flex",
                     }}
                 >
-                    fluxenta.dev/pranai
+                    pranai.cloud
                 </div>
             </div>
         ),

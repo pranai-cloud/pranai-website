@@ -10,14 +10,14 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://fluxenta.dev/pranai"),
+  metadataBase: new URL("https://pranai.cloud"),
   title: "Pran.ai — AI Digital Workforce for India",
   description:
     "Deploy native-speaking, hyper-realistic AI voice and chat agents into your business. Customer support and sales development on autopilot.",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://fluxenta.dev/pranai",
+    url: "https://pranai.cloud",
     siteName: "Pran.ai",
     title: "Pran.ai — AI Digital Workforce for India",
     description:
