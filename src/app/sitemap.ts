@@ -2,50 +2,49 @@ import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://pranai.cloud";
-  const now = new Date();
 
   return [
     {
       url: baseUrl,
-      lastModified: now,
+      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${baseUrl}/privacy-policy`,
-      lastModified: now,
+      url: `${baseUrl}/contact`,
+      lastModified: new Date(),
       changeFrequency: "monthly",
-      priority: 0.5,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/privacy-policy`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
     {
       url: `${baseUrl}/terms-of-service`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/refund-and-cancellation-policy`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/shipping-and-delivery`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
     {
       url: `${baseUrl}/trust-center`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
     {
-      url: `${baseUrl}/contact`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.6,
+      url: `${baseUrl}/refund-and-cancellation-policy`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/shipping-and-delivery`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
   ];
 }
