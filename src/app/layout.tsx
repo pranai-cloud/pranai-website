@@ -24,12 +24,21 @@ export const metadata: Metadata = {
     title: "Pran.ai — AI Digital Workforce for India",
     description:
       "Deploy native-speaking, hyper-realistic AI voice and chat agents into your business. Customer support and sales development on autopilot.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Pran.ai – AI-Powered Digital Workforce That Speaks Any Language",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Pran.ai — AI Digital Workforce for India",
     description:
       "Deploy native-speaking, hyper-realistic AI voice and chat agents into your business.",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
@@ -45,7 +54,7 @@ const jsonLd = {
       "@id": "https://pranai.cloud/#organization",
       name: "Fluxenta Technologies",
       url: "https://fluxenta.dev",
-      logo: "https://pranai.cloud/icon.svg",
+      logo: "https://pranai.cloud/logo.png",
       email: "founder@pranai.cloud",
       telephone: "+919304117405",
       address: {
