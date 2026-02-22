@@ -15,7 +15,7 @@ Built with [Next.js 16](https://nextjs.org), [React 19](https://react.dev), [Tai
 | Database | Supabase |
 | Email | Resend + React Email |
 | AI | Groq SDK |
-| Analytics | Vercel Analytics, PostHog |
+| Analytics | Google Analytics, PostHog |
 | Scheduling | Calendly (embedded) |
 | Validation | Zod |
 

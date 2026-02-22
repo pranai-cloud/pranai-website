@@ -92,7 +92,7 @@ export default function PrivacyPolicyPage() {
         </p>
         <ul className="list-disc space-y-2 pl-6 text-secondary leading-relaxed">
           <li>
-            <strong className="text-primary">Vercel Analytics:</strong> Collects
+            <strong className="text-primary">Google Analytics:</strong> Collects
             anonymised usage data such as pages visited, session duration, and
             device type.
           </li>

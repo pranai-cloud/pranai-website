@@ -37,7 +37,7 @@ export function CookieConsent() {
     <div className="fixed bottom-0 left-0 right-0 z-[999] border-t border-black/[0.08] bg-white/95 px-4 py-4 shadow-lg shadow-black/[0.06] backdrop-blur-lg sm:px-6">
       <div className="mx-auto flex max-w-[1400px] flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm leading-relaxed text-secondary">
-          We use cookies and analytics (Vercel Analytics) to improve your
+          We use cookies and analytics (Google Analytics) to improve your
           experience. By accepting, you consent to our use of these
           technologies. See our{" "}
           <Link
