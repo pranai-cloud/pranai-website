@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap } from "lucide-react";
+import { Zap, Phone } from "lucide-react";
 import { ANIMATION_TIMING, ANIMATION_VARIANTS } from "@/lib/constants";
-import { roles, languages } from "../_data";
+import { roles, languages, indianLanguages, globalLanguages } from "../_data";
 import { LeadCaptureForm } from "../components/LeadCaptureForm";
+import { InteractiveVoiceShowcase } from "../components/InteractiveVoiceShowcase";
+import { LanguageTooltip } from "@/components/LanguageTooltip";
 
 export function HeroSection() {
   const [roleIndex, setRoleIndex] = useState(0);
@@ -55,15 +57,15 @@ export function HeroSection() {
               className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tighter text-primary"
             >
               Hire a 24/7 AI{" "}
-              <span className="inline-block overflow-hidden align-bottom">
-                <AnimatePresence mode="wait">
+              <span className="inline-grid *:[grid-area:1/1] align-bottom ml-2">
+                <AnimatePresence>
                   <motion.span
                     key={roleIndex}
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -24 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="inline-block bg-gradient-to-r from-pran-orange to-pran-orange-light bg-clip-text text-transparent will-change-transform"
+                    className="bg-gradient-to-r from-pran-orange to-pran-orange-light bg-clip-text text-transparent will-change-transform pb-2"
                   >
                     {roles[roleIndex]}
                   </motion.span>
@@ -71,15 +73,15 @@ export function HeroSection() {
               </span>
               <br className="hidden sm:block" />
               {" "}that speaks{" "}
-              <span className="inline-flex h-[1.4em] items-center overflow-hidden align-bottom">
-                <AnimatePresence mode="wait">
+              <span className="inline-grid *:[grid-area:1/1] align-bottom ml-2">
+                <AnimatePresence>
                   <motion.span
                     key={langIndex}
-                    initial={{ opacity: 0, y: "0.4em" }}
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: "-0.4em" }}
+                    exit={{ opacity: 0, y: -16 }}
                     transition={{ duration: 0.25, ease: "easeInOut" }}
-                    className="inline-block text-pran-orange-light underline decoration-pran-orange/30 underline-offset-4 will-change-transform"
+                    className="text-pran-orange-light underline decoration-pran-orange/30 underline-offset-4 will-change-transform pb-2"
                   >
                     {languages[langIndex]}
                   </motion.span>
@@ -97,20 +99,46 @@ export function HeroSection() {
               agents directly into your business. Never miss a lead or a support
               ticket again.
             </motion.p>
+
           </div>
 
           <motion.div
+            layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...ANIMATION_VARIANTS.SPRING_TRANSITION, delay: ANIMATION_TIMING.DELAY_LONG }}
-            className="flex-[2] mt-10 lg:mt-0"
+            className="flex-[2] mt-10 lg:mt-0 flex flex-col gap-6"
           >
             <LeadCaptureForm />
-            <p className="mt-4 text-center text-sm text-secondary">
+            {/* <InteractiveVoiceShowcase /> */}
+            <motion.p layout="position" className="mt-4 text-center text-sm text-secondary">
               No credit card required · Live in under 30 minutes
-            </p>
+            </motion.p>
           </motion.div>
         </div>
+
+        {/* Try It Live CTA Banner - Commented out for now
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...ANIMATION_VARIANTS.SPRING_TRANSITION, delay: ANIMATION_TIMING.DELAY_LONG + 0.1 }}
+          className="relative mt-12 sm:mt-16 flex w-full"
+        >
+          // Coming Soon Overlay
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-full bg-white/50 backdrop-blur-[2px]">
+            <span className="rounded-full border border-pran-orange/20 bg-white px-3 py-1 text-xs font-semibold text-pran-orange shadow-sm">
+              Coming Soon
+            </span>
+          </div>
+          <button
+            disabled
+            className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-pran-orange/20 bg-pran-orange/5 px-6 py-4 text-sm sm:text-base font-semibold text-pran-orange opacity-40 shadow-sm"
+          >
+            <Phone className="h-5 w-5 shrink-0" />
+            Try it live: Call +91-XXX-XXX-XXXX
+          </button>
+        </motion.div>
+        */}
       </div>
     </section>
   );

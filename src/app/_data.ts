@@ -12,19 +12,59 @@ export const roles = [
   "Customer Support Representative",
   "Business Development Representative",
   "Front Desk Receptionist",
-  "Technical Support Engineer",
-  "Inbound Lead Qualifier",
+  "Technical Support",
+  "Lead Qualifier",
 ] as const;
 
-export const languages = [
-  "हिंदी",
-  "English",
-  "ಕನ್ನಡ",
-  "বাংলা",
-  "मराठी",
-  "తెలుగు",
-  "தமிழ்",
+export const indianLanguages = [
+  "বাংলা", // Bengali
+  "ગુજરાતી", // Gujarati
+  "हिंदी", // Hindi
+  "ಕನ್ನಡ", // Kannada
+  "മലയാളം", // Malayalam
+  "मराठी", // Marathi
+  "ਪੰਜਾਬੀ", // Punjabi
+  "தமிழ்", // Tamil
+  "తెలుగు", // Telugu
 ] as const;
+
+export const globalLanguages = [
+  "العربية", // Arabic
+  "Български", // Bulgarian
+  "中文", // Chinese
+  "Hrvatski", // Croatian
+  "Čeština", // Czech
+  "Dansk", // Danish
+  "Nederlands", // Dutch
+  "English", // English
+  "Suomi", // Finnish
+  "Français", // French
+  "ქართული", // Georgian
+  "Deutsch", // German
+  "Ελληνικά", // Greek
+  "עברית", // Hebrew
+  "Magyar", // Hungarian
+  "Bahasa Indonesia", // Indonesian
+  "Italiano", // Italian
+  "日本語", // Japanese
+  "한국어", // Korean
+  "Bahasa Melayu", // Malay
+  "Norsk", // Norwegian
+  "Polski", // Polish
+  "Português", // Portuguese
+  "Română", // Romanian
+  "Русский", // Russian
+  "Slovenčina", // Slovak
+  "Español", // Spanish
+  "Svenska", // Swedish
+  "Tagalog", // Tagalog
+  "ไทย", // Thai
+  "Türkçe", // Turkish
+  "Українська", // Ukrainian
+  "Tiếng Việt", // Vietnamese
+] as const;
+
+export const languages = [...indianLanguages, "English"];
 
 export interface PainPoint {
   icon: LucideIcon;

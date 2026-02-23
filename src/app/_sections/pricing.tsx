@@ -10,6 +10,8 @@ import {
   createViewportAnimation,
 } from "@/lib/animations";
 import { useContactSafe } from "@/components/contact-provider";
+import { globalLanguages, indianLanguages } from "../_data";
+import { LanguageTooltip } from "@/components/LanguageTooltip";
 
 interface Currency {
   code: string;
@@ -56,14 +58,14 @@ const PLANS: Plan[] = [
     baseUSD: 0.10,
     period: "/min",
     platformFeeUSD: 19,
-    description: "On-demand pricing with no commitments — only pay for the call minutes you use.",
+    description: "On-demand pricing with no commitments — only pay for the AI talk time you use.",
     highlight: false,
     features: [
-      "Billed per minute of call time",
-      "Indian languages included",
-      "Email & chat channels",
+      "Billed per minute of active call time",
+      "9 Regional Languages & Indian English support",
+      "Standard Voice Models",
       "HD voice with <500ms latency",
-      "Basic analytics dashboard",
+      "7-Day Call Log Retention",
     ],
     cta: "Start Free Trial",
   },
@@ -72,18 +74,17 @@ const PLANS: Plan[] = [
     icon: Sparkles,
     baseUSD: 949,
     period: "/mo",
-    description: "Scale your AI workforce with advanced capabilities and global reach.",
+    description: "Predictable volume pricing for growing teams with advanced automation needs.",
     highlight: true,
     badge: "Most Popular",
     features: [
-      "Up to 10,000 conversations/mo",
-      "40+ global languages",
-      "Omnichannel — voice, chat & WhatsApp",
-      "HD voice with <500ms latency",
-      "Priority support",
-      "Advanced analytics & reporting",
-      "Custom automation workflows",
-      "Salesforce integration",
+      "10,000 Included Minutes/mo", // Safely anchors your COGS
+      "40+ Global Languages & Dialects",
+      "Premium Hyper-Realistic Voices",
+      "Omnichannel — Voice, Chat & WhatsApp",
+      "Custom Webhook & API Integrations",
+      "1-Year Call Data Retention (India Region)", // Highlights Azure compliance
+      "Priority SLA Support",
     ],
     cta: "Start Free Trial",
   },
@@ -92,16 +93,15 @@ const PLANS: Plan[] = [
     icon: Building2,
     baseUSD: null,
     period: "",
-    description: "Custom pricing for large-scale deployments with dedicated infrastructure.",
+    description: "Custom deployments with dedicated infrastructure and SLA guarantees.",
     highlight: false,
     features: [
-      "Unlimited agents & conversations",
-      "Omnichannel deployment",
-      "Ultra-low latency, dedicated infra",
-      "24/7 dedicated account manager",
-      "Custom model fine-tuning",
-      "Custom SLA guarantees",
-      "SOC 2 & ISO compliance",
+      "Custom Minute Buckets & Volume Discounts",
+      "Bring Your Own SIP Trunk (BYOC)",
+      "Dedicated Azure Container Isolation", // Appeals to Enterprise security
+      "Custom Vector RAG Fine-tuning",
+      "24/7 Dedicated Account Manager",
+      "SOC 2 & ISO 27001 Compliance",
     ],
     cta: "Talk to Sales",
   },
@@ -134,9 +134,8 @@ function CurrencySelector({
               <button
                 key={c.code}
                 onClick={() => { onChange(c); setOpen(false); }}
-                className={`flex w-full items-center gap-2.5 px-4 py-2 text-sm transition-colors hover:bg-black/[0.03] ${
-                  c.code === selected.code ? "text-pran-orange font-semibold" : "text-primary"
-                }`}
+                className={`flex w-full items-center gap-2.5 px-4 py-2 text-sm transition-colors hover:bg-black/[0.03] ${c.code === selected.code ? "text-pran-orange font-semibold" : "text-primary"
+                  }`}
               >
                 <span className="w-5 text-center font-semibold">{c.symbol}</span>
                 {c.code}
@@ -193,11 +192,10 @@ export function PricingSection() {
               <motion.div
                 key={plan.name}
                 variants={staggerItem}
-                className={`relative flex flex-col rounded-2xl border p-8 lg:p-10 transition-shadow ${
-                  plan.highlight
-                    ? "border-pran-orange/30 bg-gradient-to-b from-pran-orange/[0.04] to-white shadow-lg shadow-pran-orange/[0.08] ring-1 ring-pran-orange/20"
-                    : "border-black/[0.06] bg-white shadow-sm"
-                }`}
+                className={`relative flex flex-col rounded-2xl border p-8 lg:p-10 transition-shadow ${plan.highlight
+                  ? "border-pran-orange/30 bg-gradient-to-b from-pran-orange/[0.04] to-white shadow-lg shadow-pran-orange/[0.08] ring-1 ring-pran-orange/20"
+                  : "border-black/[0.06] bg-white shadow-sm"
+                  }`}
               >
                 {plan.badge && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -246,11 +244,10 @@ export function PricingSection() {
 
                 <button
                   onClick={() => contact?.openContact()}
-                  className={`group inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold transition-all ${
-                    plan.highlight
-                      ? "bg-pran-orange text-white shadow-md shadow-pran-orange/20 hover:bg-pran-orange-light hover:shadow-lg hover:shadow-pran-orange/30"
-                      : "border border-black/[0.08] bg-black/[0.03] text-primary hover:bg-black/[0.06]"
-                  }`}
+                  className={`group inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold transition-all ${plan.highlight
+                    ? "bg-pran-orange text-white shadow-md shadow-pran-orange/20 hover:bg-pran-orange-light hover:shadow-lg hover:shadow-pran-orange/30"
+                    : "border border-black/[0.08] bg-black/[0.03] text-primary hover:bg-black/[0.06]"
+                    }`}
                 >
                   {plan.cta}
                   <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -262,8 +259,12 @@ export function PricingSection() {
 
         <motion.div
           {...createViewportAnimation(sectionHeader)}
-          className="mt-10 text-center"
+          className="mt-10 flex flex-col items-center gap-4 text-center"
         >
+          <div className="inline-block rounded-2xl border border-black/5 bg-black/[0.02] px-5 py-3 text-sm text-secondary md:text-base shadow-sm">
+            We offer <LanguageTooltip title="Global Languages" languages={globalLanguages}>33 global languages</LanguageTooltip> and{" "}
+            <LanguageTooltip title="Indian Languages" languages={indianLanguages}>9 Indian languages</LanguageTooltip>.
+          </div>
           <p className="inline-flex items-center gap-2 rounded-full border border-pran-orange/20 bg-pran-orange/[0.04] px-5 py-2.5 text-sm font-medium text-pran-orange">
             <Sparkles className="size-4" />
             14-day free trial on all plans · No credit card required

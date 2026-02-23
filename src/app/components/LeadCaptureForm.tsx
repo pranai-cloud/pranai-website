@@ -12,6 +12,7 @@ import {
   Share2,
   Palette,
   UserSearch,
+  ArrowRight,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -63,15 +64,18 @@ export function LeadCaptureForm() {
 function FormInner({ onReset }: { onReset: () => void }) {
   const [state, formAction] = useActionState(submitPranaiLead, initialState);
   const [isPending, startTransition] = useTransition();
+  const [isExpanded, setIsExpanded] = useState(true); // Form is now expanded by default
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [fields, setFields] = useState({ name: '', email: '', phone: '', company: '' });
 
   const isFormReady =
-    fields.name.trim() !== '' &&
     fields.email.trim() !== '' &&
-    fields.phone.trim() !== '' &&
-    fields.company.trim() !== '' &&
-    selectedRoles.length > 0;
+    (!isExpanded || (
+      fields.name.trim() !== '' &&
+      fields.phone.trim() !== '' &&
+      fields.company.trim() !== '' &&
+      selectedRoles.length > 0
+    ));
 
   useEffect(() => {
     if (!state.success) return;
@@ -166,147 +170,174 @@ function FormInner({ onReset }: { onReset: () => void }) {
 
   return (
     <motion.div
+      layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+      className="w-full mx-auto max-w-lg overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 sm:p-8 shadow-sm"
     >
       <form
         action={handleSubmit}
-        className="mx-auto max-w-lg space-y-4 rounded-2xl border border-black/[0.06] bg-white p-6 sm:p-8 shadow-sm"
+        className="space-y-4"
         noValidate
       >
         <AnimatePresence>
           {state.message && !state.success && (
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              layout
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
             >
               {state.message}
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div>
-          <label htmlFor="pranai-name" className={labelClasses}>Full Name</label>
-          <input
-            id="pranai-name"
-            name="name"
-            type="text"
-            required
-            placeholder="Jane Smith"
-            value={fields.name}
-            onChange={(e) => setFields((f) => ({ ...f, name: e.target.value }))}
-            className={inputClasses}
-          />
-          <FieldError errors={state.errors?.name} />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="pranai-email" className={labelClasses}>Work Email</label>
+        <motion.div layout>
+          <label htmlFor="pranai-email" className={isExpanded ? labelClasses : 'sr-only'}>
+            Work Email
+          </label>
+          <div className="relative">
             <input
               id="pranai-email"
               name="email"
               type="email"
               required
-              placeholder="jane@company.com"
+              placeholder={isExpanded ? "jane@company.com" : "Enter your work email..."}
               value={fields.email}
               onChange={(e) => setFields((f) => ({ ...f, email: e.target.value }))}
+              onFocus={() => setIsExpanded(true)}
               className={inputClasses}
             />
-            <FieldError errors={state.errors?.email} />
+            {!isExpanded && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded(true)}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-pran-orange p-2 text-white shadow-sm hover:bg-pran-orange-light transition-colors"
+                aria-label="Continue"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
           </div>
-          <div>
-            <label htmlFor="pranai-phone" className={labelClasses}>Phone Number</label>
-            <PhoneInput
-              id="pranai-phone"
-              name="phone"
-              errors={state.errors?.phone}
-              onChange={(v) => setFields((f) => ({ ...f, phone: v }))}
-            />
-          </div>
-        </div>
+          {isExpanded && <FieldError errors={state.errors?.email} />}
+        </motion.div>
 
-        <div>
-          <label htmlFor="pranai-company" className={labelClasses}>Company Name</label>
-          <input
-            id="pranai-company"
-            name="company"
-            type="text"
-            required
-            placeholder="Acme Inc."
-            value={fields.company}
-            onChange={(e) => setFields((f) => ({ ...f, company: e.target.value }))}
-            className={inputClasses}
-          />
-          <FieldError errors={state.errors?.company} />
-        </div>
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="space-y-4 overflow-hidden"
+            >
+              <div>
+                <label htmlFor="pranai-name" className={labelClasses}>Full Name</label>
+                <input
+                  id="pranai-name"
+                  name="name"
+                  type="text"
+                  required
+                  placeholder="Jane Smith"
+                  value={fields.name}
+                  onChange={(e) => setFields((f) => ({ ...f, name: e.target.value }))}
+                  className={inputClasses}
+                />
+                <FieldError errors={state.errors?.name} />
+              </div>
 
-        <div>
-          <label className={labelClasses}>
-            Which AI Roles do you need?
-            <span className="ml-1.5 normal-case tracking-normal text-stone-400 font-normal">(select all that apply)</span>
-          </label>
-          <input type="hidden" name="ai_role" value={selectedRoles.join(', ')} />
-          <div className="flex flex-wrap gap-2">
-            {AI_ROLES.map((role) => {
-              const Icon = role.icon;
-              const isSelected = selectedRoles.includes(role.value);
-              const toggle = () =>
-                setSelectedRoles((prev) =>
-                  prev.includes(role.value)
-                    ? prev.filter((v) => v !== role.value)
-                    : [...prev, role.value],
-                );
-              return (
-                <button
-                  key={role.value}
-                  type="button"
-                  onClick={toggle}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-[13px] font-medium transition-all ${
-                    isSelected
-                      ? 'border-pran-orange/40 bg-pran-orange/10 text-pran-orange ring-2 ring-pran-orange/10'
-                      : 'border-black/[0.08] bg-white text-secondary hover:border-black/[0.14] hover:bg-stone-50'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
-                  {role.label}
-                  {role.waitlist && (
-                    <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-stone-400">Soon</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <FieldError errors={state.errors?.ai_role} />
-        </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="pranai-phone" className={labelClasses}>Phone Number</label>
+                  <PhoneInput
+                    id="pranai-phone"
+                    name="phone"
+                    errors={state.errors?.phone}
+                    onChange={(v) => setFields((f) => ({ ...f, phone: v }))}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="pranai-company" className={labelClasses}>Company Name</label>
+                  <input
+                    id="pranai-company"
+                    name="company"
+                    type="text"
+                    required
+                    placeholder="Acme Inc."
+                    value={fields.company}
+                    onChange={(e) => setFields((f) => ({ ...f, company: e.target.value }))}
+                    className={inputClasses}
+                  />
+                  <FieldError errors={state.errors?.company} />
+                </div>
+              </div>
 
-        <button
-          type="submit"
-          disabled={isPending || !isFormReady}
-          className="w-full rounded-lg bg-pran-orange px-6 py-3.5 text-sm font-bold text-white tracking-wide transition-all hover:bg-pran-orange-light disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            'Get Started → Schedule a Demo'
+              <div>
+                <label className={labelClasses}>
+                  Which AI Roles do you need?
+                  <span className="ml-1.5 normal-case tracking-normal text-stone-400 font-normal">(select all that apply)</span>
+                </label>
+                <input type="hidden" name="ai_role" value={selectedRoles.join(', ')} />
+                <div className="flex flex-wrap gap-2">
+                  {AI_ROLES.map((role) => {
+                    const Icon = role.icon;
+                    const isSelected = selectedRoles.includes(role.value);
+                    const toggle = () =>
+                      setSelectedRoles((prev) =>
+                        prev.includes(role.value)
+                          ? prev.filter((v) => v !== role.value)
+                          : [...prev, role.value],
+                      );
+                    return (
+                      <button
+                        key={role.value}
+                        type="button"
+                        onClick={toggle}
+                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-[13px] font-medium transition-all ${isSelected
+                          ? 'border-pran-orange/40 bg-pran-orange/10 text-pran-orange ring-2 ring-pran-orange/10'
+                          : 'border-black/[0.08] bg-white text-secondary hover:border-black/[0.14] hover:bg-stone-50'
+                          }`}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        {role.label}
+                        {role.waitlist && (
+                          <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-stone-400">Soon</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <FieldError errors={state.errors?.ai_role} />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isPending || !isFormReady}
+                className="mt-4 w-full rounded-lg bg-pran-orange px-6 py-3.5 text-sm font-bold text-white tracking-wide transition-all hover:bg-pran-orange-light disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Join Wishlist & Schedule Demo'
+                )}
+              </button>
+
+              <p className="pt-2 text-center text-[10.5px] leading-relaxed text-stone-muted">
+                By submitting, you agree to our{' '}
+                <a href="/privacy-policy" className="text-secondary underline hover:text-primary">Privacy Policy</a>
+                {' '}and{' '}
+                <a href="/terms-of-service" className="text-secondary underline hover:text-primary">Terms of Service</a>.
+                Your data is stored securely on our cloud infrastructure.
+              </p>
+            </motion.div>
           )}
-        </button>
-
-        <p className="text-center text-[10.5px] leading-relaxed text-stone-muted">
-          By submitting, you agree to our{' '}
-          <a href="/privacy-policy" className="text-secondary underline hover:text-primary">Privacy Policy</a>
-          {' '}and{' '}
-          <a href="/terms-of-service" className="text-secondary underline hover:text-primary">Terms of Service</a>.
-          Your data is stored securely on our cloud infrastructure. You will
-          receive an AI-generated follow-up email and may be contacted by our
-          AI voice agents. We never sell your data to third parties.
-        </p>
+        </AnimatePresence>
       </form>
     </motion.div>
   );
