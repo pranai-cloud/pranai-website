@@ -26,7 +26,7 @@ export const metadata: Metadata = {
       "Deploy native-speaking, hyper-realistic AI voice and chat agents into your business. Customer support and sales development on autopilot.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Pran.ai – AI-Powered Digital Workforce That Speaks Any Language",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     title: "Pran.ai — AI Digital Workforce for India",
     description:
       "Deploy native-speaking, hyper-realistic AI voice and chat agents into your business.",
-    images: ["/og-image.png"],
+    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,
