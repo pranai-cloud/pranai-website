@@ -64,7 +64,7 @@ export function LeadCaptureForm() {
 function FormInner({ onReset }: { onReset: () => void }) {
   const [state, formAction] = useActionState(submitPranaiLead, initialState);
   const [isPending, startTransition] = useTransition();
-  const [isExpanded, setIsExpanded] = useState(true); // Form is now expanded by default
+  const [isExpanded, setIsExpanded] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [fields, setFields] = useState({ name: '', email: '', phone: '', company: '' });
 
@@ -79,7 +79,10 @@ function FormInner({ onReset }: { onReset: () => void }) {
 
   useEffect(() => {
     if (!state.success) return;
-    const timer = setTimeout(onReset, 3000);
+    const timer = setTimeout(() => {
+      onReset();
+      setIsExpanded(false);
+    }, 3000);
     return () => clearTimeout(timer);
   }, [state.success, onReset]);
 
@@ -313,20 +316,29 @@ function FormInner({ onReset }: { onReset: () => void }) {
                 <FieldError errors={state.errors?.ai_role} />
               </div>
 
-              <button
-                type="submit"
-                disabled={isPending || !isFormReady}
-                className="mt-4 w-full rounded-lg bg-pran-orange px-6 py-3.5 text-sm font-bold text-white tracking-wide transition-all hover:bg-pran-orange-light disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Join Wishlist & Schedule Demo'
-                )}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded(false)}
+                  className="w-full sm:w-1/3 rounded-lg border border-black/[0.08] bg-stone-50 px-6 py-3.5 text-sm font-semibold text-secondary transition-all hover:bg-stone-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending || !isFormReady}
+                  className="w-full sm:w-2/3 rounded-lg bg-pran-orange px-6 py-3.5 text-sm font-bold text-white tracking-wide transition-all hover:bg-pran-orange-light shadow-md shadow-pran-orange/20 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Join Wishlist & Schedule Demo'
+                  )}
+                </button>
+              </div>
 
               <p className="pt-2 text-center text-[10.5px] leading-relaxed text-stone-muted">
                 By submitting, you agree to our{' '}

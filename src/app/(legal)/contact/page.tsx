@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Mail, Phone, MapPin, Clock, Building2, FileText } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Contact & Support — Pran.ai",
+  title: "Contact & Support — pran.ai",
   description:
-    "Get in touch with the Pran.ai team by Fluxenta Technologies. Support, billing, and general inquiries.",
+    "Get in touch with the pran.ai team by Fluxenta Technologies. Support, billing, and general inquiries.",
 };
 
 const CONTACT_CHANNELS = [
@@ -46,7 +46,7 @@ const HELP_TOPICS = [
   {
     title: "Sales & Demos",
     description:
-      "Interested in Pran.ai for your business? Book a demo call and we'll walk you through how our AI workforce can help.",
+      "Interested in pran.ai for your business? Book a demo call and we'll walk you through how our AI workforce can help.",
   },
   {
     title: "General Inquiries",
@@ -65,7 +65,7 @@ export default function ContactPage() {
         <p className="text-lg text-secondary leading-relaxed">
           We&apos;re here to help. Whether you have a question about our AI
           agents, need technical assistance, or want to discuss a partnership,
-          the Pran.ai team is ready to assist you.
+          the pran.ai team is ready to assist you.
         </p>
       </header>
 
@@ -168,7 +168,7 @@ export default function ContactPage() {
             </div>
             <div>
               <p className="font-medium text-primary">Product</p>
-              <p>Pran.ai — AI Digital Workforce</p>
+              <p>pran.ai — AI Digital Workforce</p>
             </div>
             <div>
               <p className="font-medium text-primary">Website</p>

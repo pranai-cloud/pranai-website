@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Pran.ai",
+  title: "Privacy Policy — pran.ai",
   description:
-    "Learn how Pran.ai by Fluxenta Technologies collects, uses, and protects your personal information.",
+    "Learn how pran.ai by Fluxenta Technologies collects, uses, and protects your personal information.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
 
       <p className="text-secondary leading-relaxed">
         Fluxenta Technologies (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or
-        &ldquo;our&rdquo;) operates Pran.ai (&ldquo;the Platform&rdquo;), an
+        &ldquo;our&rdquo;) operates pran.ai (&ldquo;the Platform&rdquo;), an
         AI-powered digital workforce product available at pranai.cloud. We are
         committed to protecting your privacy. This Privacy Policy explains how
         we collect, use, disclose, and safeguard your information when you visit
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
           2. How We Use Your Information
         </h2>
         <ul className="list-disc space-y-2 pl-6 text-secondary leading-relaxed">
-          <li>To provide, operate, and maintain the Pran.ai Platform and our services.</li>
+          <li>To provide, operate, and maintain the pran.ai Platform and our services.</li>
           <li>To process transactions and send related information such as invoices and confirmations.</li>
           <li>To communicate with you about projects, service updates, and promotional offers (with your consent).</li>
           <li>To improve our website, AI agents, and user experience.</li>
@@ -117,7 +117,7 @@ export default function PrivacyPolicyPage() {
         <p className="text-secondary leading-relaxed">
           By providing your phone number and opting in via our contact or lead
           capture forms, you explicitly consent to receive communications from
-          Fluxenta Technologies and its product Pran.ai. This may include
+          Fluxenta Technologies and its product pran.ai. This may include
           qualification and scheduling calls conducted by our proprietary AI
           voice agents. These AI-driven calls are recorded, transcribed, and
           analysed solely for the purpose of quality assurance, lead

@@ -21,7 +21,7 @@ export function ProblemSection() {
             The Problem
           </p>
           <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter text-primary">
-            India speaks 22 languages.{" "}
+            Your customers speak dozens of languages.{" "}
             <span className="text-secondary">
               Your support team doesn&apos;t.
             </span>

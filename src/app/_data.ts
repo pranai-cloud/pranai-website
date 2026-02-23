@@ -9,11 +9,11 @@ import {
 } from "lucide-react";
 
 export const roles = [
-  "Customer Support Representative",
-  "Business Development Representative",
+  "Customer Support Rep",
+  "Sales Representative",
   "Front Desk Receptionist",
-  "Technical Support",
-  "Lead Qualifier",
+  "Technical Support Rep",
+  "Lead Qualifier Engine",
 ] as const;
 
 export const indianLanguages = [
@@ -139,7 +139,7 @@ export interface FAQ {
 export const faqs: FAQ[] = [
   {
     q: "Does it sound like a robot?",
-    a: "No. Pran.ai uses state-of-the-art regional voice models that sound indistinguishable from a native speaker. We fine-tune on real conversational data so intonation, pauses, and fillers feel completely natural.",
+    a: "No. pran.ai uses state-of-the-art regional voice models that sound indistinguishable from a native speaker. We fine-tune on real conversational data so intonation, pauses, and fillers feel completely natural.",
   },
   {
     q: "What if the AI doesn't know the answer?",
@@ -148,5 +148,21 @@ export const faqs: FAQ[] = [
   {
     q: "How do we integrate it?",
     a: "Zero coding required. We provide a drop-in phone number and a lightweight JavaScript widget for your website. Most teams go live the same day.",
+  },
+  {
+    q: "How secure is my customer data?",
+    a: "Enterprise-grade security is built-in from day one. We are SOC2 compliant, encrypt all conversational data at rest and in transit, and never use your proprietary business data to train our foundational models.",
+  },
+  {
+    q: "Can the AI switch languages mid-conversation?",
+    a: "Absolutely. Our agent constantly analyzes the caller's language and dialect. If a customer starts in English and switches to Hindi, the AI immediately adapts and responds fluidly in Hindi without dropping the context.",
+  },
+  {
+    q: "Does it integrate with our existing CRM?",
+    a: "Yes. We offer native integrations with Salesforce, HubSpot, Zendesk, and Freshworks. Over APIs, the AI can check inventory, book appointments, or update lead status directly into your database in real-time.",
+  },
+  {
+    q: "How does the pricing work?",
+    a: "We charge purely based on active conversation minutes. There are no per-seat licenses or complex implementation fees. You only pay for the time the AI actually spends talking to your customers.",
   },
 ];

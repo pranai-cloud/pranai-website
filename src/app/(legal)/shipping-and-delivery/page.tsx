@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Shipping & Delivery Policy — Pran.ai",
+  title: "Shipping & Delivery Policy — pran.ai",
   description:
-    "Shipping and delivery policy for Pran.ai digital services by Fluxenta Technologies.",
+    "Shipping and delivery policy for pran.ai digital services by Fluxenta Technologies.",
 };
 
 export default function ShippingDeliveryPage() {
@@ -17,7 +17,7 @@ export default function ShippingDeliveryPage() {
       </header>
 
       <p className="text-secondary leading-relaxed">
-        Pran.ai is a digital product operated by Fluxenta Technologies. All
+        pran.ai is a digital product operated by Fluxenta Technologies. All
         services are delivered electronically. No physical goods are shipped.
       </p>
 
@@ -26,7 +26,7 @@ export default function ShippingDeliveryPage() {
           Nature of Service
         </h2>
         <p className="text-secondary leading-relaxed">
-          Pran.ai provides AI-powered voice and chat agents deployed digitally
+          pran.ai provides AI-powered voice and chat agents deployed digitally
           to your business. Our services include AI agent configuration,
           training, deployment, and ongoing management — all delivered remotely
           via our cloud platform.
@@ -69,7 +69,7 @@ export default function ShippingDeliveryPage() {
         </h2>
         <p className="text-secondary leading-relaxed">
           All services, credentials, documentation, and onboarding materials
-          are delivered electronically via email and/or through your Pran.ai
+          are delivered electronically via email and/or through your pran.ai
           dashboard. No physical shipping or courier delivery is involved.
         </p>
       </section>
