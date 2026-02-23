@@ -16,7 +16,7 @@ export function HeroSection() {
   useEffect(() => {
     const id = setInterval(
       () => setRoleIndex((i) => (i + 1) % roles.length),
-      3000,
+      2000,
     );
     return () => clearInterval(id);
   }, []);
@@ -24,7 +24,7 @@ export function HeroSection() {
   useEffect(() => {
     const id = setInterval(
       () => setLangIndex((i) => (i + 1) % languages.length),
-      2000,
+      1200,
     );
     return () => clearInterval(id);
   }, []);
@@ -122,7 +122,6 @@ export function HeroSection() {
           </div>
 
           <motion.div
-            layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...ANIMATION_VARIANTS.SPRING_TRANSITION, delay: ANIMATION_TIMING.DELAY_LONG }}
@@ -137,7 +136,6 @@ export function HeroSection() {
 
         {/* Full-width Secondary CTA Banner */}
         <motion.div
-          layout
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...ANIMATION_VARIANTS.SPRING_TRANSITION, delay: ANIMATION_TIMING.DELAY_LONG + 0.1 }}
