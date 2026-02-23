@@ -26,7 +26,7 @@ export function PranFooter() {
         <div className="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand & About */}
           <div className="space-y-4 sm:col-span-2 lg:col-span-1">
-            <Link href="/" aria-label="Pran.ai Home">
+            <Link href="/" aria-label="pran.ai Home">
               <svg
                 viewBox="0 0 160 40"
                 className="h-7 w-auto"

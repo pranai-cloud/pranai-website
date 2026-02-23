@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Refund & Cancellation Policy — Pran.ai",
+  title: "Refund & Cancellation Policy — pran.ai",
   description:
-    "Refund and cancellation policy for Pran.ai services by Fluxenta Technologies.",
+    "Refund and cancellation policy for pran.ai services by Fluxenta Technologies.",
 };
 
 export default function RefundPolicyPage() {
@@ -20,7 +20,7 @@ export default function RefundPolicyPage() {
 
       <p className="text-secondary leading-relaxed">
         This policy applies to all services offered by Fluxenta Technologies
-        through the Pran.ai platform (pranai.cloud). Please review your order
+        through the pran.ai platform (pranai.cloud). Please review your order
         carefully before making any payment.
       </p>
 

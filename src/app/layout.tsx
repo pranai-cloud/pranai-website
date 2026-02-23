@@ -13,15 +13,15 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://pranai.cloud"),
-  title: "Pran.ai — AI Digital Workforce for India",
+  title: "pran.ai — AI Digital Workforce for India",
   description:
     "Deploy native-speaking, hyper-realistic AI voice and chat agents into your business. Customer support and sales development on autopilot.",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://pranai.cloud",
-    siteName: "Pran.ai",
-    title: "Pran.ai — AI Digital Workforce for India",
+    siteName: "pran.ai",
+    title: "pran.ai — AI Digital Workforce for India",
     description:
       "Deploy native-speaking, hyper-realistic AI voice and chat agents into your business. Customer support and sales development on autopilot.",
     images: [
@@ -29,13 +29,13 @@ export const metadata: Metadata = {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Pran.ai – AI-Powered Digital Workforce That Speaks Any Language",
+        alt: "pran.ai – AI-Powered Digital Workforce That Speaks Any Language",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pran.ai — AI Digital Workforce for India",
+    title: "pran.ai — AI Digital Workforce for India",
     description:
       "Deploy native-speaking, hyper-realistic AI voice and chat agents into your business.",
     images: ["/og-image.jpg"],
@@ -72,7 +72,7 @@ const jsonLd = {
       "@type": "WebSite",
       "@id": "https://pranai.cloud/#website",
       url: "https://pranai.cloud",
-      name: "Pran.ai",
+      name: "pran.ai",
       description:
         "AI-powered digital workforce for India. Deploy native-speaking voice and chat agents for customer support and sales.",
       publisher: { "@id": "https://pranai.cloud/#organization" },
@@ -80,7 +80,7 @@ const jsonLd = {
     {
       "@type": "SoftwareApplication",
       "@id": "https://pranai.cloud/#product",
-      name: "Pran.ai",
+      name: "pran.ai",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       description:
@@ -102,7 +102,7 @@ const jsonLd = {
           name: "Does it sound like a robot?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "No. Pran.ai uses state-of-the-art regional voice models that sound indistinguishable from a native speaker. We fine-tune on real conversational data so intonation, pauses, and fillers feel completely natural.",
+            text: "No. pran.ai uses state-of-the-art regional voice models that sound indistinguishable from a native speaker. We fine-tune on real conversational data so intonation, pauses, and fillers feel completely natural.",
           },
         },
         {

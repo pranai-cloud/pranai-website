@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Pran.ai",
+  title: "Terms of Service — pran.ai",
   description:
-    "Terms and conditions governing the use of Pran.ai services by Fluxenta Technologies.",
+    "Terms and conditions governing the use of pran.ai services by Fluxenta Technologies.",
 };
 
 export default function TermsOfServicePage() {
@@ -22,7 +22,7 @@ export default function TermsOfServicePage() {
         These Terms and Conditions (&ldquo;Terms&rdquo;) constitute a binding
         agreement between Fluxenta Technologies (&ldquo;we,&rdquo;
         &ldquo;us,&rdquo; or &ldquo;our&rdquo;) and you (&ldquo;you&rdquo; or
-        &ldquo;your&rdquo;), governing your use of the Pran.ai platform
+        &ldquo;your&rdquo;), governing your use of the pran.ai platform
         available at pranai.cloud and/or purchase of services from us
         (collectively, &ldquo;Services&rdquo;).
       </p>
@@ -51,7 +51,7 @@ export default function TermsOfServicePage() {
             available through our platform meet your specific requirements.
           </li>
           <li>
-            You shall not use the AI agents deployed via Pran.ai for any
+            You shall not use the AI agents deployed via pran.ai for any
             fraudulent, deceptive, harassing, or illegal purposes.
           </li>
         </ul>
@@ -84,7 +84,7 @@ export default function TermsOfServicePage() {
         </h2>
         <ul className="list-disc space-y-2 pl-6 text-secondary leading-relaxed">
           <li>
-            Pran.ai provides AI-powered voice and chat agents for customer
+            pran.ai provides AI-powered voice and chat agents for customer
             support and sales development. While we strive for accuracy and
             reliability, AI agents may occasionally produce incorrect or
             unexpected responses.
@@ -146,7 +146,7 @@ export default function TermsOfServicePage() {
         <ul className="list-disc space-y-2 pl-6 text-secondary leading-relaxed">
           <li>
             All content, branding, AI models, voice models, software, and
-            technology on the Pran.ai platform are the intellectual property of
+            technology on the pran.ai platform are the intellectual property of
             Fluxenta Technologies unless otherwise stated.
           </li>
           <li>
@@ -205,7 +205,7 @@ export default function TermsOfServicePage() {
         </h2>
         <p className="text-secondary leading-relaxed">
           You must be at least 18 years of age to use our Services or enter
-          into these Terms. By using the Pran.ai platform, you represent and
+          into these Terms. By using the pran.ai platform, you represent and
           warrant that you are at least 18 years old and have the legal
           capacity to enter into a binding agreement. If you are using the
           Services on behalf of an organisation, you represent that you have

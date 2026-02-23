@@ -1,6 +1,7 @@
 import { ContactProvider } from "@/components/contact-provider";
 import { PranNavbar } from "./_sections/navbar";
 import { HeroSection } from "./_sections/hero";
+import { TrustBanner } from "./_sections/trust-banner";
 import { ProblemSection } from "./_sections/problem";
 import { SolutionSection } from "./_sections/solution";
 import { MetricsSection } from "./_sections/metrics";
@@ -21,6 +22,7 @@ export default function PranAIPage() {
         <SolutionSection />
         <MetricsSection />
         <HowItWorksSection />
+        <TrustBanner />
         <PricingSection />
         <FAQSection />
         <FinalCTASection />

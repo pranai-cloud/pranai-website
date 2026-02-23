@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Shield, Server, Lock, Code, Eye, Building2 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Trust Center — Pran.ai",
+  title: "Trust Center — pran.ai",
   description:
-    "Security practices, data protection, and compliance information for Pran.ai by Fluxenta Technologies.",
+    "Security practices, data protection, and compliance information for pran.ai by Fluxenta Technologies.",
 };
 
 const TRUST_SECTIONS = [
@@ -70,7 +70,7 @@ export default function TrustCenterPage() {
           At Fluxenta Technologies, trust is the foundation of every
           engagement. We take the security of your data, intellectual property,
           and business operations seriously. This page outlines the practices
-          and principles that keep your information safe when using Pran.ai.
+          and principles that keep your information safe when using pran.ai.
         </p>
       </header>
 

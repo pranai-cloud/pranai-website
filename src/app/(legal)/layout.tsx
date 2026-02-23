@@ -11,7 +11,7 @@ export default function LegalLayout({
     <div className="min-h-screen bg-surface text-primary">
       <header className="border-b border-black/[0.06]">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-4 sm:px-6 md:px-12 lg:px-20">
-          <Link href="/" aria-label="Pran.ai Home">
+          <Link href="/" aria-label="pran.ai Home">
             <svg
               viewBox="0 0 160 40"
               className="h-7 w-auto"

@@ -46,7 +46,7 @@ export function PranaiNurtureEmail({ prospectName, companyName, aiMessage, aiRol
           fontStyle="normal"
         />
       </Head>
-      <Preview>Pran.ai — Your AI {rolesDisplay} {aiRoles.length === 1 ? 'agent is' : 'agents are'} almost ready</Preview>
+      <Preview>pran.ai — Your AI {rolesDisplay} {aiRoles.length === 1 ? 'agent is' : 'agents are'} almost ready</Preview>
       <Body style={body}>
         <Container style={container}>
           <Section style={header}>
@@ -93,7 +93,7 @@ export function PranaiNurtureEmail({ prospectName, companyName, aiMessage, aiRol
             <Text style={signOff}>
               Best regards,
               <br />
-              <strong>The Pran.ai Team</strong>
+              <strong>The pran.ai Team</strong>
               <br />
               Fluxenta Technologies
             </Text>
@@ -101,7 +101,7 @@ export function PranaiNurtureEmail({ prospectName, companyName, aiMessage, aiRol
 
           <Section style={footer}>
             <Text style={footerText}>
-              Pran.ai by Fluxenta Technologies · Bengaluru, India
+              pran.ai by Fluxenta Technologies · Bengaluru, India
             </Text>
             <Text style={footerDisclosure}>
               This email was generated using AI and sent automatically because

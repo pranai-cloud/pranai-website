@@ -68,11 +68,11 @@ async function sendNurtureEmail(lead: {
         {
           role: 'system',
           content:
-            'You are a representative of the Pran.ai team (an AI digital workforce product by Fluxenta Technologies). Write exactly 2 short, highly professional and personalized paragraphs. Do not include a greeting (e.g. "Hi Name") and do not include a sign-off (e.g. "Best, Team") as the email template handles this. Reference the prospect\'s company name and the specific AI role(s) they selected. Be confident but not salesy. Just return the raw paragraph text.',
+            'You are a representative of the pran.ai team (an AI digital workforce product by Fluxenta Technologies). Write exactly 2 short, highly professional and personalized paragraphs. Do not include a greeting (e.g. "Hi Name") and do not include a sign-off (e.g. "Best, Team") as the email template handles this. Reference the prospect\'s company name and the specific AI role(s) they selected. Be confident but not salesy. Just return the raw paragraph text.',
         },
         {
           role: 'user',
-          content: `${firstName} from ${companyName} just requested a demo. They are interested in these AI role(s): ${rolesDisplay}. Write a personalized follow-up that: (1) thanks them by referencing their company ${companyName} and the specific role(s) they chose, (2) briefly explains how Pran.ai deploys native-speaking AI agents for those exact roles that handle calls and chats 24/7 with <500ms latency, and (3) invites them to book a 30-minute live demo where we'll configure a test agent tailored to ${companyName}.`,
+          content: `${firstName} from ${companyName} just requested a demo. They are interested in these AI role(s): ${rolesDisplay}. Write a personalized follow-up that: (1) thanks them by referencing their company ${companyName} and the specific role(s) they chose, (2) briefly explains how pran.ai deploys native-speaking AI agents for those exact roles that handle calls and chats 24/7 with <500ms latency, and (3) invites them to book a 30-minute live demo where we'll configure a test agent tailored to ${companyName}.`,
         },
       ],
       temperature: 0.7,
@@ -85,11 +85,11 @@ async function sendNurtureEmail(lead: {
     }
 
     const subject = roleLabels.length > 1
-      ? `Pran.ai — Your ${roleLabels.length} AI Agent Demo Request`
-      : `Pran.ai — Your AI ${rolesDisplay} Demo Request`;
+      ? `pran.ai — Your ${roleLabels.length} AI Agent Demo Request`
+      : `pran.ai — Your AI ${rolesDisplay} Demo Request`;
 
     await resend.emails.send({
-      from: 'Pran.ai <founder@pranai.cloud>',
+      from: 'pran.ai <founder@pranai.cloud>',
       to: lead.email,
       subject,
       react: PranaiNurtureEmail({

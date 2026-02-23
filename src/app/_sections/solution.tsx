@@ -7,11 +7,11 @@ import {
   CheckCircle2,
   Palette,
   Share2,
-  Lock,
   Phone,
   Wrench,
   Filter,
   UserSearch,
+  Package,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -35,61 +35,43 @@ const SDR_FEATURES = [
   "Follows up persistently without being pushy",
 ];
 
-interface ComingSoonRole {
+interface WorkforceRole {
   icon: LucideIcon;
   badge: string;
   title: string;
   description: string;
 }
 
-const COMING_SOON_ROLES: ComingSoonRole[] = [
+const EXTENDED_ROLES: WorkforceRole[] = [
   {
     icon: Phone,
-    badge: "Front Desk Receptionist",
-    title: "Your 24/7 front desk",
+    badge: "Inbound",
+    title: "24/7 Virtual Receptionist",
     description:
-      "Greets callers, routes inquiries, and schedules appointments — in any language.",
+      "Answers FAQs, routes urgent queries, and books appointments directly into your calendar—even at 3 AM.",
   },
   {
-    icon: Wrench,
-    badge: "Technical Support",
-    title: "Level-1 triage, automated",
+    icon: Target,
+    badge: "Outbound",
+    title: "Lead Qualification Engine",
     description:
-      "Walks users through troubleshooting steps and escalates complex issues with full context.",
+      "Instantly calls back new web leads within 30 seconds to qualify budget and intent before your sales team steps in.",
   },
   {
-    icon: Filter,
-    badge: "Lead Qualifier",
-    title: "Score & route every lead",
+    icon: Package,
+    badge: "Operations",
+    title: "COD & Logistics Assistant",
     description:
-      "Qualifies inbound leads against your criteria and books meetings for your sales team.",
-  },
-  {
-    icon: Palette,
-    badge: "UI/UX Designer",
-    title: "Design systems on demand",
-    description:
-      "AI-generated wireframes, user flows, and design audits — trained on your brand guidelines.",
-  },
-  {
-    icon: Share2,
-    badge: "Social Media Manager",
-    title: "Content & engagement, automated",
-    description:
-      "AI-crafted posts, reply management, and scheduling across platforms — always on-brand.",
-  },
-  {
-    icon: UserSearch,
-    badge: "HR Recruiter",
-    title: "Hire faster, screen smarter",
-    description:
-      "Screens resumes, conducts initial outreach, and schedules interviews autonomously.",
+      "Automates Cash-on-Delivery confirmation calls and updates shipping addresses, reducing your RTO rate.",
   },
 ];
 
-function ComingSoonCard({ icon: Icon, badge, title, description }: ComingSoonRole) {
+function ExtendedRoleCard({ icon: Icon, badge, title, description }: WorkforceRole) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 lg:p-8 shadow-sm h-full">
+    <motion.div
+      variants={staggerItem}
+      className="relative overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 lg:p-8 shadow-sm h-full"
+    >
       <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-pran-orange/[0.04] blur-2xl" />
       <div className="relative">
         <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-pran-orange/20 bg-pran-orange/10 px-3.5 py-1 text-sm font-medium text-pran-orange">
@@ -98,12 +80,8 @@ function ComingSoonCard({ icon: Icon, badge, title, description }: ComingSoonRol
         </div>
         <h3 className="mb-2 text-lg font-bold text-primary">{title}</h3>
         <p className="text-sm leading-relaxed text-secondary">{description}</p>
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-pran-orange/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-pran-orange">
-          <Lock className="h-3 w-3" />
-          Coming Soon
-        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -149,7 +127,7 @@ export function SolutionSection() {
       id="solution"
       className="relative border-t border-black/[0.06] py-16 md:py-20"
     >
-      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 md:px-12 lg:px-20">
+      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-12 lg:px-20">
         <motion.div
           {...createViewportAnimation(sectionHeader)}
           className="mb-16 text-center"
@@ -162,6 +140,7 @@ export function SolutionSection() {
           </h2>
         </motion.div>
 
+        {/* Primary 2-column role cards */}
         <motion.div
           {...createViewportAnimation(staggerContainer)}
           className="grid gap-8 lg:grid-cols-2"
@@ -180,21 +159,15 @@ export function SolutionSection() {
           />
         </motion.div>
 
+        {/* Extended 3-column role cards */}
         <motion.div
-          {...createViewportAnimation(sectionHeader)}
-          className="mt-20 mb-10 text-center"
+          {...createViewportAnimation(staggerContainer)}
+          className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] bg-stone-50 px-4 py-1.5 text-xs font-mono uppercase tracking-[0.12em] text-secondary">
-            <Lock className="h-3.5 w-3.5" />
-            Coming Soon to the Workforce
-          </div>
-        </motion.div>
-
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {COMING_SOON_ROLES.map((role) => (
-            <ComingSoonCard key={role.badge} {...role} />
+          {EXTENDED_ROLES.map((role) => (
+            <ExtendedRoleCard key={role.badge} {...role} />
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
