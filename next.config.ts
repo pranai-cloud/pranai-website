@@ -2,11 +2,11 @@ import type { NextConfig } from "next";
 
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://assets.calendly.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://assets.calendly.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.calendly.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://va.vercel-scripts.com https://vitals.vercel-insights.com https://calendly.com https://*.supabase.co https://*.posthog.com",
+  "connect-src 'self' https://calendly.com https://*.supabase.co https://*.posthog.com",
   "frame-src https://calendly.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",

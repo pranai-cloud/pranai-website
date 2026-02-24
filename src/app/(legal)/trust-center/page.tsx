@@ -22,7 +22,7 @@ const TRUST_SECTIONS = [
     icon: Server,
     title: "2. Infrastructure Security",
     items: [
-      "Our deployments run on trusted cloud providers (AWS, Vercel) with SOC 2 and ISO 27001 certifications.",
+      "Our deployments run on trusted cloud infrastructure (Azure + Cloudflare) with strong security and compliance controls.",
       "Automated backups ensure data resilience with point-in-time recovery capability.",
       "Continuous monitoring and alerting are in place for anomaly detection and incident response.",
       "AI agent infrastructure is isolated per client to prevent cross-contamination of data.",
