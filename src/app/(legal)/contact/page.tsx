@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Mail, Phone, MapPin, Clock, Building2, FileText } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, Building2 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact & Support — pran.ai",
   description:
-    "Get in touch with the pran.ai team by Fluxenta Technologies. Support, billing, and general inquiries.",
+    "Get in touch with the pran.ai team by Pranai AI Pvt. Ltd. Support, billing, and general inquiries.",
 };
 
 const CONTACT_CHANNELS = [
@@ -164,7 +164,7 @@ export default function ContactPage() {
           <div className="space-y-3">
             <div>
               <p className="font-medium text-primary">Legal Entity</p>
-              <p>Fluxenta Technologies</p>
+              <p>Pranai AI Pvt. Ltd.</p>
             </div>
             <div>
               <p className="font-medium text-primary">Product</p>
@@ -183,6 +183,7 @@ export default function ContactPage() {
             </div>
           </div>
           <div className="space-y-3">
+            {/* GSTIN/Udyam temporarily hidden; re-enable later today.
             <div className="flex items-start gap-2">
               <FileText className="mt-0.5 h-4 w-4 shrink-0 text-stone-muted" />
               <div>
@@ -199,6 +200,7 @@ export default function ContactPage() {
                 <p>UDYAM-KR-03-0660792</p>
               </div>
             </div>
+            */}
             <div className="flex items-start gap-2">
               <Clock className="mt-0.5 h-4 w-4 shrink-0 text-stone-muted" />
               <div>

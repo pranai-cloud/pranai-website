@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Privacy Policy — pran.ai",
   description:
-    "Learn how pran.ai by Fluxenta Technologies collects, uses, and protects your personal information.",
+    "Learn how pran.ai by Pranai AI Pvt. Ltd. collects, uses, and protects your personal information.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
       </header>
 
       <p className="text-secondary leading-relaxed">
-        Fluxenta Technologies (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or
+        Pranai AI Pvt. Ltd. (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or
         &ldquo;our&rdquo;) operates pran.ai (&ldquo;the Platform&rdquo;), an
         AI-powered digital workforce product available at pranai.cloud. We are
         committed to protecting your privacy. This Privacy Policy explains how
@@ -117,7 +117,7 @@ export default function PrivacyPolicyPage() {
         <p className="text-secondary leading-relaxed">
           By providing your phone number and opting in via our contact or lead
           capture forms, you explicitly consent to receive communications from
-          Fluxenta Technologies and its product pran.ai. This may include
+          Pranai AI Pvt. Ltd. and its product pran.ai. This may include
           qualification and scheduling calls conducted by our proprietary AI
           voice agents. These AI-driven calls are recorded, transcribed, and
           analysed solely for the purpose of quality assurance, lead

@@ -27,8 +27,8 @@ export const ANIMATION_VARIANTS = {
 } as const;
 
 export const CONTACT_CONFIG = {
-  CALENDLY_URL: "https://calendly.com/fluxenta-dev/30min",
-  EMAIL: "fluxenta.dev@gmail.com",
+  CALENDLY_URL: "https://calendly.com/founder-pranai/30min",
+  EMAIL: "founder@pranai.cloud",
   PHONE: "+919304117405",
   OFFICE: "Bengaluru, Karnataka",
   SOCIALS: [

@@ -120,7 +120,7 @@ export function ContactModal({ isOpen, onClose, branding }: ContactModalProps) {
                       <div className="w-10 h-10 rounded-xl bg-surface border border-black/[0.06] flex items-center justify-center group-hover:border-accent transition-all">
                         <Mail size={16} className="text-accent" />
                       </div>
-                      <span className="text-primary font-mono text-xs tracking-widest">fluxenta.dev@gmail.com</span>
+                      <span className="text-primary font-mono text-xs tracking-widest">founder@pranai.cloud</span>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-xl bg-surface border border-black/[0.06] flex items-center justify-center">

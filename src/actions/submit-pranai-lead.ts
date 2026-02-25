@@ -68,7 +68,7 @@ async function sendNurtureEmail(lead: {
         {
           role: 'system',
           content:
-            'You are a representative of the pran.ai team (an AI digital workforce product by Fluxenta Technologies). Write exactly 2 short, highly professional and personalized paragraphs. Do not include a greeting (e.g. "Hi Name") and do not include a sign-off (e.g. "Best, Team") as the email template handles this. Reference the prospect\'s company name and the specific AI role(s) they selected. Be confident but not salesy. Just return the raw paragraph text.',
+            'You are a representative of the pran.ai team (an AI digital workforce product by Pranai AI Pvt. Ltd.). Write exactly 2 short, highly professional and personalized paragraphs. Do not include a greeting (e.g. "Hi Name") and do not include a sign-off (e.g. "Best, Team") as the email template handles this. Reference the prospect\'s company name and the specific AI role(s) they selected. Be confident but not salesy. Just return the raw paragraph text.',
         },
         {
           role: 'user',

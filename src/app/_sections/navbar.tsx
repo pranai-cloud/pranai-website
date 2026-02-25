@@ -50,7 +50,7 @@ export function PranNavbar() {
           transition={{ duration: 0.4, ease: "easeOut" }}
           className={`w-full max-w-[1100px] rounded-full border transition-colors duration-300 ${
             scrolled
-              ? "border-black/[0.08] bg-white/95 shadow-lg shadow-black/[0.04] supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:backdrop-blur-lg"
+              ? "border-black/[0.08] bg-white/95 shadow-lg shadow-black/[0.04] lg:supports-[backdrop-filter]:bg-white/80 lg:supports-[backdrop-filter]:backdrop-blur-lg"
               : "border-black/[0.06] bg-white/90 shadow-sm"
           }`}
         >

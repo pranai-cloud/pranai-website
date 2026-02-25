@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Shipping & Delivery Policy — pran.ai",
   description:
-    "Shipping and delivery policy for pran.ai digital services by Fluxenta Technologies.",
+    "Shipping and delivery policy for pran.ai digital services by Pranai AI Pvt. Ltd.",
 };
 
 export default function ShippingDeliveryPage() {
@@ -17,7 +17,7 @@ export default function ShippingDeliveryPage() {
       </header>
 
       <p className="text-secondary leading-relaxed">
-        pran.ai is a digital product operated by Fluxenta Technologies. All
+        pran.ai is a digital product operated by Pranai AI Pvt. Ltd. All
         services are delivered electronically. No physical goods are shipped.
       </p>
 

@@ -15,5 +15,5 @@ export const PranContactBranding: ContactModalBranding = {
   ),
   description:
     "Book a live demo and we\u2019ll deploy a native-speaking AI agent tailored to your business \u2014 in under 30 minutes. No credit card, no commitment.",
-  footerLabel: "Powered by Fluxenta.",
+  footerLabel: "Powered by Pranai AI Pvt. Ltd.",
 };

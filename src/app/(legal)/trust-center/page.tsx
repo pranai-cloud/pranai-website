@@ -4,7 +4,7 @@ import { Shield, Server, Lock, Code, Eye, Building2 } from "lucide-react";
 export const metadata: Metadata = {
   title: "Trust Center — pran.ai",
   description:
-    "Security practices, data protection, and compliance information for pran.ai by Fluxenta Technologies.",
+    "Security practices, data protection, and compliance information for pran.ai by Pranai AI Pvt. Ltd.",
 };
 
 const TRUST_SECTIONS = [
@@ -67,7 +67,7 @@ export default function TrustCenterPage() {
           Trust Center
         </h1>
         <p className="text-lg text-secondary leading-relaxed">
-          At Fluxenta Technologies, trust is the foundation of every
+          At Pranai AI Pvt. Ltd., trust is the foundation of every
           engagement. We take the security of your data, intellectual property,
           and business operations seriously. This page outlines the practices
           and principles that keep your information safe when using pran.ai.
@@ -93,6 +93,7 @@ export default function TrustCenterPage() {
           <Building2 className="h-5 w-5 text-pran-orange" />
           6. Business Registration
         </h2>
+        {/* GSTIN/Udyam temporarily hidden; re-enable later today.
         <div className="grid gap-4 sm:grid-cols-2 text-sm text-secondary">
           <div>
             <p className="font-medium text-primary">GSTIN</p>
@@ -103,6 +104,7 @@ export default function TrustCenterPage() {
             <p>UDYAM-KR-03-0660792</p>
           </div>
         </div>
+        */}
       </section>
 
       <section className="rounded-xl border border-black/[0.06] bg-white/60 p-6 space-y-3">

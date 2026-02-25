@@ -51,8 +51,8 @@ const jsonLd = {
     {
       "@type": "Organization",
       "@id": "https://pranai.cloud/#organization",
-      name: "Fluxenta Technologies",
-      url: "https://fluxenta.dev",
+      name: "Pranai AI Pvt. Ltd.",
+      url: "https://pranai.cloud/",
       logo: "https://pranai.cloud/logo.png",
       email: "founder@pranai.cloud",
       telephone: "+919304117405",

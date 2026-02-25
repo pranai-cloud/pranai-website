@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service — pran.ai",
   description:
-    "Terms and conditions governing the use of pran.ai services by Fluxenta Technologies.",
+    "Terms and conditions governing the use of pran.ai services by Pranai AI Pvt. Ltd.",
 };
 
 export default function TermsOfServicePage() {
@@ -20,7 +20,7 @@ export default function TermsOfServicePage() {
 
       <p className="text-secondary leading-relaxed">
         These Terms and Conditions (&ldquo;Terms&rdquo;) constitute a binding
-        agreement between Fluxenta Technologies (&ldquo;we,&rdquo;
+        agreement between Pranai AI Pvt. Ltd. (&ldquo;we,&rdquo;
         &ldquo;us,&rdquo; or &ldquo;our&rdquo;) and you (&ldquo;you&rdquo; or
         &ldquo;your&rdquo;), governing your use of the pran.ai platform
         available at pranai.cloud and/or purchase of services from us
@@ -147,7 +147,7 @@ export default function TermsOfServicePage() {
           <li>
             All content, branding, AI models, voice models, software, and
             technology on the pran.ai platform are the intellectual property of
-            Fluxenta Technologies unless otherwise stated.
+            Pranai AI Pvt. Ltd. unless otherwise stated.
           </li>
           <li>
             You may not copy, modify, distribute, or create derivative works

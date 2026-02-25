@@ -53,7 +53,7 @@ export function PranaiNurtureEmail({ prospectName, companyName, aiMessage, aiRol
             <Text style={logoText}>
               pran<span style={logoAccent}>.ai</span>
             </Text>
-            <Text style={tagline}>by Fluxenta</Text>
+            <Text style={tagline}>by Pranai AI Pvt. Ltd.</Text>
           </Section>
 
           <Hr style={divider} />
@@ -80,7 +80,7 @@ export function PranaiNurtureEmail({ prospectName, companyName, aiMessage, aiRol
 
           <Section style={ctaSection}>
             <Button
-              href="https://calendly.com/fluxenta-dev/30min"
+              href="https://calendly.com/founder-pranai/30min"
               style={ctaButton}
             >
               Book Your Live Demo
@@ -95,13 +95,13 @@ export function PranaiNurtureEmail({ prospectName, companyName, aiMessage, aiRol
               <br />
               <strong>The pran.ai Team</strong>
               <br />
-              Fluxenta Technologies
+              Pranai AI Pvt. Ltd.
             </Text>
           </Section>
 
           <Section style={footer}>
             <Text style={footerText}>
-              pran.ai by Fluxenta Technologies · Bengaluru, India
+              pran.ai by Pranai AI Pvt. Ltd. · Bengaluru, India
             </Text>
             <Text style={footerDisclosure}>
               This email was generated using AI and sent automatically because

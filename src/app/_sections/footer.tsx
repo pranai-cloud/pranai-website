@@ -65,12 +65,12 @@ export function PranFooter() {
             <p className="text-xs text-stone-muted">
               A product by{" "}
               <a
-                href="https://fluxenta.dev"
+                href="https://pranai.cloud/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium text-secondary hover:text-primary transition-colors"
               >
-                Fluxenta Technologies
+                Pranai AI Pvt. Ltd.
               </a>
             </p>
           </div>
@@ -147,9 +147,10 @@ export function PranFooter() {
         {/* Bottom bar */}
         <div className="flex flex-col items-center justify-between gap-3 border-t border-black/[0.06] py-6 text-xs text-stone-muted sm:flex-row">
           <p>
-            © {new Date().getFullYear()} Fluxenta Technologies. All rights
+            © {new Date().getFullYear()} Pranai AI Pvt. Ltd. All rights
             reserved.
           </p>
+          {/* GSTIN/Udyam temporarily hidden; re-enable later today.
           <div className="flex items-center gap-4">
             <span>GSTIN: 29LBAPS2132R1ZW</span>
             <span className="hidden sm:inline">·</span>
@@ -157,6 +158,7 @@ export function PranFooter() {
               Udyam: UDYAM-KR-03-0660792
             </span>
           </div>
+          */}
         </div>
       </div>
     </footer>

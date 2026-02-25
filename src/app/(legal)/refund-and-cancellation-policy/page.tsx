@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Refund & Cancellation Policy — pran.ai",
   description:
-    "Refund and cancellation policy for pran.ai services by Fluxenta Technologies.",
+    "Refund and cancellation policy for pran.ai services by Pranai AI Pvt. Ltd.",
 };
 
 export default function RefundPolicyPage() {
@@ -19,7 +19,7 @@ export default function RefundPolicyPage() {
       </header>
 
       <p className="text-secondary leading-relaxed">
-        This policy applies to all services offered by Fluxenta Technologies
+        This policy applies to all services offered by Pranai AI Pvt. Ltd.
         through the pran.ai platform (pranai.cloud). Please review your order
         carefully before making any payment.
       </p>
@@ -29,7 +29,7 @@ export default function RefundPolicyPage() {
           Cancellation Terms
         </h2>
         <p className="text-secondary leading-relaxed">
-          Fluxenta Technologies does not accept cancellation requests for
+          Pranai AI Pvt. Ltd. does not accept cancellation requests for
           services already commenced or delivered. If you wish to cancel a
           service before commencement, please contact us immediately at{" "}
           <a
@@ -52,7 +52,7 @@ export default function RefundPolicyPage() {
           Refund Terms
         </h2>
         <p className="text-secondary leading-relaxed">
-          Fluxenta Technologies generally does not accept refund requests once
+          Pranai AI Pvt. Ltd. generally does not accept refund requests once
           services have been rendered or AI agents have been deployed and
           configured for your business. Please review your order and service
           scope before making payments.

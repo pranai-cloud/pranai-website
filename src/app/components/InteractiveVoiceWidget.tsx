@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { PhoneCall, Sparkles, Headset, Target, Calendar, ShoppingCart } from "lucide-react";
 
 type CallState = "idle" | "connecting" | "active";
@@ -16,6 +16,17 @@ const SCENARIOS = [
 export function InteractiveVoiceWidget() {
     const [selectedScenario, setSelectedScenario] = useState(SCENARIOS[0]);
     const [callState, setCallState] = useState<CallState>("idle");
+    const [isMobile, setIsMobile] = useState(false);
+    const prefersReducedMotion = useReducedMotion();
+    const lowPerfMode = isMobile || prefersReducedMotion;
+
+    useEffect(() => {
+        const media = window.matchMedia("(max-width: 768px)");
+        const onChange = () => setIsMobile(media.matches);
+        onChange();
+        media.addEventListener("change", onChange);
+        return () => media.removeEventListener("change", onChange);
+    }, []);
 
     const toggleCall = () => {
         if (callState === "idle") {
@@ -28,20 +39,22 @@ export function InteractiveVoiceWidget() {
 
     return (
         <motion.div
-            layout
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 120, damping: 20, delay: 0.1 }}
+            layout={!lowPerfMode}
+            initial={lowPerfMode ? false : { opacity: 0, y: 12 }}
+            animate={lowPerfMode ? undefined : { opacity: 1, y: 0 }}
+            transition={lowPerfMode ? { duration: 0 } : { type: "spring", stiffness: 120, damping: 20, delay: 0.1 }}
             className="relative w-full mx-auto max-w-lg overflow-hidden rounded-3xl border border-black/[0.06] bg-white p-6 sm:p-8 shadow-sm"
         >
             {/* Background blurred mesh */}
-            <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-3xl">
-                <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-pran-orange/5 blur-3xl mix-blend-multiply" />
-                <div className="absolute inset-0 backdrop-blur-3xl bg-white/40" />
-            </div>
+            {!lowPerfMode && (
+                <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-3xl">
+                    <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-pran-orange/5 blur-3xl mix-blend-multiply" />
+                    <div className="absolute inset-0 backdrop-blur-3xl bg-white/40" />
+                </div>
+            )}
 
             <div className="relative z-10">
-                <motion.div layout="position" className="text-center mb-8">
+                <motion.div layout={!lowPerfMode ? "position" : false} className="text-center mb-8">
                     <h3 className="text-2xl font-bold text-primary tracking-tight mb-2">
                         Start talking to our AI Voice Agent
                     </h3>
@@ -56,15 +69,15 @@ export function InteractiveVoiceWidget() {
                                 transition={{ duration: 0.2 }}
                                 className="flex h-6 w-full items-center justify-center gap-1.5 opacity-80"
                             >
-                                {Array.from({ length: 7 }).map((_, i) => (
+                                {Array.from({ length: lowPerfMode ? 4 : 7 }).map((_, i) => (
                                     <motion.div
                                         key={i}
                                         className="w-1.5 rounded-full bg-pran-orange"
                                         initial={{ height: "20%" }}
-                                        animate={{ height: ["20%", `${Math.random() * 80 + 20}%`, "20%"] }}
+                                        animate={lowPerfMode ? { height: ["20%", "60%", "20%"] } : { height: ["20%", `${Math.random() * 80 + 20}%`, "20%"] }}
                                         transition={{
                                             repeat: Infinity,
-                                            duration: 0.4 + Math.random() * 0.4,
+                                            duration: lowPerfMode ? 1 : 0.4 + Math.random() * 0.4,
                                             ease: "easeInOut",
                                         }}
                                     />
@@ -85,7 +98,7 @@ export function InteractiveVoiceWidget() {
                     </AnimatePresence>
                 </motion.div>
 
-                <motion.div layout="position" className="flex flex-wrap justify-center gap-2 mb-8">
+                <motion.div layout={!lowPerfMode ? "position" : false} className="flex flex-wrap justify-center gap-2 mb-8">
                     {SCENARIOS.map((scenario) => {
                         const isSelected = selectedScenario.label === scenario.label;
                         return (
@@ -107,7 +120,7 @@ export function InteractiveVoiceWidget() {
                     })}
                 </motion.div>
 
-                <motion.div layout="position" className="flex justify-center">
+                <motion.div layout={!lowPerfMode ? "position" : false} className="flex justify-center">
                     <button
                         onClick={toggleCall}
                         className={`group relative flex items-center justify-center gap-2 rounded-full px-8 py-4 font-bold tracking-wide text-white transition-all shadow-md overflow-hidden ${callState === "active"
@@ -122,11 +135,7 @@ export function InteractiveVoiceWidget() {
                             </>
                         ) : callState === "connecting" ? (
                             <>
-                                <motion.div
-                                    animate={{ rotate: 360 }}
-                                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                                    className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white"
-                                />
+                                <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                                 Connecting...
                             </>
                         ) : (
@@ -137,7 +146,7 @@ export function InteractiveVoiceWidget() {
                         )}
 
                         {/* Shimmer effect for Start Call */}
-                        {callState === "idle" && (
+                        {callState === "idle" && !lowPerfMode && (
                             <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                         )}
                     </button>

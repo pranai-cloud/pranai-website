@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Zap, Phone } from "lucide-react";
 import { ANIMATION_TIMING, ANIMATION_VARIANTS } from "@/lib/constants";
 import { roles, languages, indianLanguages, globalLanguages } from "../_data";
@@ -12,28 +12,38 @@ import { LanguageTooltip } from "@/components/LanguageTooltip";
 export function HeroSection() {
   const [roleIndex, setRoleIndex] = useState(0);
   const [langIndex, setLangIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 768px)");
+    const onChange = () => setIsMobile(media.matches);
+    onChange();
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     const id = setInterval(
       () => setRoleIndex((i) => (i + 1) % roles.length),
-      2000,
+      isMobile ? 3200 : 3000,
     );
     return () => clearInterval(id);
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     const id = setInterval(
       () => setLangIndex((i) => (i + 1) % languages.length),
-      1200,
+      isMobile ? 2600 : 2200,
     );
     return () => clearInterval(id);
-  }, []);
+  }, [isMobile]);
 
   return (
     <section className="relative isolate overflow-hidden pt-28 md:pt-32 pb-8 md:pb-12">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-1/4 -left-40 w-[36rem] h-[36rem] rounded-full bg-pran-orange/[0.04] blur-2xl md:blur-3xl" />
-        <div className="absolute bottom-1/4 -right-40 w-[36rem] h-[36rem] rounded-full bg-pran-orange/[0.04] blur-2xl md:blur-3xl" />
+        <div className="hidden md:block absolute top-1/4 -left-40 w-[36rem] h-[36rem] rounded-full bg-pran-orange/[0.04] blur-2xl md:blur-3xl" />
+        <div className="hidden md:block absolute bottom-1/4 -right-40 w-[36rem] h-[36rem] rounded-full bg-pran-orange/[0.04] blur-2xl md:blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(249,115,22,0.05),transparent)]" />
       </div>
 
@@ -60,11 +70,12 @@ export function HeroSection() {
               <AnimatePresence mode="wait">
                 <motion.span
                   key={roleIndex}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: isMobile ? 0 : 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="inline-block bg-gradient-to-r from-pran-orange to-pran-orange-light bg-clip-text text-transparent will-change-transform pb-2 ml-2"
+                  exit={{ opacity: 0, y: isMobile ? 0 : -16 }}
+                  transition={{ duration: isMobile ? 0.15 : 0.2, ease: "easeOut" }}
+                  className="inline-block bg-gradient-to-r from-pran-orange to-pran-orange-light bg-clip-text text-transparent pb-2 ml-2"
+                  style={{ willChange: "opacity", transform: "translateZ(0)" }}
                 >
                   {roles[roleIndex]}
                 </motion.span>
@@ -74,11 +85,12 @@ export function HeroSection() {
               <AnimatePresence mode="wait">
                 <motion.span
                   key={langIndex}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: isMobile ? 0 : 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="inline-block text-pran-orange-light underline decoration-pran-orange/30 underline-offset-4 will-change-transform pb-2 ml-2"
+                  exit={{ opacity: 0, y: isMobile ? 0 : -12 }}
+                  transition={{ duration: isMobile ? 0.15 : 0.2, ease: "easeOut" }}
+                  className="inline-block text-pran-orange-light underline decoration-pran-orange/30 underline-offset-4 pb-2 ml-2"
+                  style={{ willChange: "opacity", transform: "translateZ(0)" }}
                 >
                   {languages[langIndex]}
                 </motion.span>
@@ -146,7 +158,7 @@ export function HeroSection() {
             <div className="text-center sm:text-left flex flex-col items-center sm:items-start">
               <div className="mb-3 inline-flex items-center rounded-full border border-pran-orange/20 bg-pran-orange/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-pran-orange backdrop-blur-sm">
                 <span className="relative flex h-2 w-2 mr-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pran-orange opacity-75"></span>
+                  <span className="hidden sm:inline-flex animate-ping absolute h-full w-full rounded-full bg-pran-orange opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-pran-orange"></span>
                 </span>
                 Live Demo
@@ -160,15 +172,15 @@ export function HeroSection() {
             </div>
 
             <div className="relative group shrink-0">
-              <div className="absolute -inset-1 rounded-full bg-pran-orange/30 blur animate-pulse" />
-              <div className="absolute inset-0 rounded-full bg-pran-orange/30 animate-ping opacity-20 [animation-duration:3s]" />
+              <div className="hidden sm:block absolute -inset-1 rounded-full bg-pran-orange/30 blur animate-pulse" />
+              <div className="hidden sm:block absolute inset-0 rounded-full bg-pran-orange/30 animate-ping opacity-20 [animation-duration:3s]" />
               <a
                 href="tel:+918000000000"
                 className="relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-full bg-pran-orange px-8 py-4 font-bold tracking-wide text-white shadow-xl shadow-pran-orange/20 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:bg-pran-orange-light"
               >
                 <motion.div
-                  animate={{ rotate: [0, -15, 15, -15, 15, 0] }}
-                  transition={{ repeat: Infinity, duration: 1.5, repeatDelay: 1.5 }}
+                  animate={isMobile ? { rotate: 0 } : { rotate: [0, -15, 15, -15, 15, 0] }}
+                  transition={isMobile ? { duration: 0 } : { repeat: Infinity, duration: 1.5, repeatDelay: 1.5 }}
                 >
                   <Phone className="h-5 w-5 shrink-0 text-white fill-white/20" />
                 </motion.div>
