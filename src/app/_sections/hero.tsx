@@ -14,6 +14,7 @@ export function HeroSection() {
   const [langIndex, setLangIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+  const lowPerfMode = isMobile || prefersReducedMotion;
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 768px)");
@@ -26,18 +27,18 @@ export function HeroSection() {
   useEffect(() => {
     const id = setInterval(
       () => setRoleIndex((i) => (i + 1) % roles.length),
-      isMobile ? 3200 : 3000,
+      lowPerfMode ? 3600 : 3000,
     );
     return () => clearInterval(id);
-  }, [isMobile]);
+  }, [lowPerfMode]);
 
   useEffect(() => {
     const id = setInterval(
       () => setLangIndex((i) => (i + 1) % languages.length),
-      isMobile ? 2600 : 2200,
+      lowPerfMode ? 3200 : 2200,
     );
     return () => clearInterval(id);
-  }, [isMobile]);
+  }, [lowPerfMode]);
 
   return (
     <section className="relative isolate overflow-hidden pt-28 md:pt-32 pb-8 md:pb-12">
@@ -67,30 +68,30 @@ export function HeroSection() {
               className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tighter text-primary min-h-[3.5em] sm:min-h-[3em] lg:min-h-[2.5em]"
             >
               Hire a 24/7 AI{" "}
-              <AnimatePresence mode="wait">
+              <AnimatePresence initial={false} mode={lowPerfMode ? "sync" : "wait"}>
                 <motion.span
                   key={roleIndex}
-                  initial={{ opacity: 0, y: isMobile ? 0 : 16 }}
+                  initial={{ opacity: 0, y: lowPerfMode ? 0 : 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: isMobile ? 0 : -16 }}
-                  transition={{ duration: isMobile ? 0.15 : 0.2, ease: "easeOut" }}
+                  exit={{ opacity: 0, y: lowPerfMode ? 0 : -16 }}
+                  transition={{ duration: lowPerfMode ? 0.3 : 0.2, ease: "easeOut" }}
                   className="inline-block bg-gradient-to-r from-pran-orange to-pran-orange-light bg-clip-text text-transparent pb-2 ml-2"
-                  style={{ willChange: "opacity", transform: "translateZ(0)" }}
+                  style={{ willChange: "opacity, transform", transform: "translateZ(0)" }}
                 >
                   {roles[roleIndex]}
                 </motion.span>
               </AnimatePresence>
               <br className="hidden sm:block" />
               {" "}that speaks{" "}
-              <AnimatePresence mode="wait">
+              <AnimatePresence initial={false} mode={lowPerfMode ? "sync" : "wait"}>
                 <motion.span
                   key={langIndex}
-                  initial={{ opacity: 0, y: isMobile ? 0 : 12 }}
+                  initial={{ opacity: 0, y: lowPerfMode ? 0 : 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: isMobile ? 0 : -12 }}
-                  transition={{ duration: isMobile ? 0.15 : 0.2, ease: "easeOut" }}
+                  exit={{ opacity: 0, y: lowPerfMode ? 0 : -12 }}
+                  transition={{ duration: lowPerfMode ? 0.3 : 0.2, ease: "easeOut" }}
                   className="inline-block text-pran-orange-light underline decoration-pran-orange/30 underline-offset-4 pb-2 ml-2"
-                  style={{ willChange: "opacity", transform: "translateZ(0)" }}
+                  style={{ willChange: "opacity, transform", transform: "translateZ(0)" }}
                 >
                   {languages[langIndex]}
                 </motion.span>
@@ -139,10 +140,12 @@ export function HeroSection() {
             transition={{ ...ANIMATION_VARIANTS.SPRING_TRANSITION, delay: ANIMATION_TIMING.DELAY_LONG }}
             className="w-full lg:w-[40%] xl:w-[35%] mt-10 lg:mt-0 flex flex-col gap-4"
           >
-            <div id="lead-form">
+            <div className="order-1 lg:order-2">
+              <InteractiveVoiceWidget />
+            </div>
+            <div id="lead-form" className="order-2 lg:order-1">
               <LeadCaptureForm />
             </div>
-            <InteractiveVoiceWidget />
           </motion.div>
         </div>
 
