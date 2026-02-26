@@ -5,6 +5,7 @@ const cspDirectives = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://assets.calendly.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.calendly.com",
   "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: data:",
   "font-src 'self' https://fonts.gstatic.com",
   "connect-src 'self' https://calendly.com https://*.supabase.co https://*.posthog.com",
   "frame-src https://calendly.com",
@@ -25,7 +26,7 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            value: "camera=(), microphone=(self), geolocation=()",
           },
           {
             key: "Strict-Transport-Security",
