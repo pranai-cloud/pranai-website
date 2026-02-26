@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Zap, Phone } from "lucide-react";
+import { Zap } from "lucide-react";
 import { ANIMATION_TIMING, ANIMATION_VARIANTS } from "@/lib/constants";
 import { roles, languages, indianLanguages, globalLanguages } from "../_data";
 import { LeadCaptureForm } from "../components/LeadCaptureForm";
@@ -36,7 +36,7 @@ export function HeroSection() {
       <div className="pointer-events-none absolute inset-0">
         <div className="hidden md:block absolute top-1/4 -left-40 w-[36rem] h-[36rem] rounded-full bg-pran-orange/[0.04] blur-2xl md:blur-3xl" />
         <div className="hidden md:block absolute bottom-1/4 -right-40 w-[36rem] h-[36rem] rounded-full bg-pran-orange/[0.04] blur-2xl md:blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(249,115,22,0.05),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(234,88,12,0.05),transparent)]" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-12 lg:px-20">
@@ -131,58 +131,15 @@ export function HeroSection() {
             transition={{ ...ANIMATION_VARIANTS.SPRING_TRANSITION, delay: ANIMATION_TIMING.DELAY_LONG }}
             className="w-full lg:w-[40%] xl:w-[35%] mt-10 lg:mt-0 flex flex-col gap-4"
           >
-            <div className="order-1 lg:order-2">
-              <InteractiveVoiceWidget />
-            </div>
-            <div id="lead-form" className="order-2 lg:order-1">
+            <div id="lead-form" className="order-1 lg:order-1">
               <LeadCaptureForm />
+            </div>
+            <div className="order-2 lg:order-2">
+              <InteractiveVoiceWidget />
             </div>
           </motion.div>
         </div>
 
-        {/* Full-width Secondary CTA Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...ANIMATION_VARIANTS.SPRING_TRANSITION, delay: ANIMATION_TIMING.DELAY_LONG + 0.1 }}
-          className="mt-6 sm:mt-10 relative w-full overflow-hidden rounded-3xl border border-pran-orange/10 bg-white px-6 py-6 sm:px-12 sm:py-8 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5),0_4px_24px_-8px_rgba(249,115,22,0.08)]"
-        >
-          <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_right,rgba(249,115,22,0.08),transparent_50%)]" />
-          <div className="relative z-10 flex flex-col items-center justify-center gap-6 sm:flex-row sm:justify-between">
-            <div className="text-center sm:text-left flex flex-col items-center sm:items-start">
-              <div className="mb-3 inline-flex items-center rounded-full border border-pran-orange/20 bg-pran-orange/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-pran-orange backdrop-blur-sm">
-                <span className="relative flex h-2 w-2 mr-2">
-                  <span className="hidden sm:inline-flex animate-ping absolute h-full w-full rounded-full bg-pran-orange opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-pran-orange"></span>
-                </span>
-                Live Demo
-              </div>
-              <h3 className="text-xl font-bold tracking-tight text-primary sm:text-2xl">
-                Don't take our word for it.
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-secondary sm:max-w-md sm:text-base">
-                Call our AI agent right now and experience the <span className="whitespace-nowrap">sub-500ms</span> response time yourself.
-              </p>
-            </div>
-
-            <div className="relative group shrink-0">
-              <div className="hidden sm:block absolute -inset-1 rounded-full bg-pran-orange/30 blur animate-pulse" />
-              <div className="hidden sm:block absolute inset-0 rounded-full bg-pran-orange/30 animate-ping opacity-20 [animation-duration:3s]" />
-              <a
-                href="tel:+918000000000"
-                className="relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-full bg-pran-orange px-8 py-4 font-bold tracking-wide text-white shadow-xl shadow-pran-orange/20 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:bg-pran-orange-light"
-              >
-                <motion.div
-                  animate={shouldReduceMotion ? { rotate: 0 } : { rotate: [0, -15, 15, -15, 15, 0] }}
-                  transition={shouldReduceMotion ? { duration: 0 } : { repeat: Infinity, duration: 1.5, repeatDelay: 1.5 }}
-                >
-                  <Phone className="h-5 w-5 shrink-0 text-white fill-white/20" />
-                </motion.div>
-                Try it live: +91-800-XXX-XXXX
-              </a>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );
