@@ -4,20 +4,47 @@ import {
   DEFAULT_VOICE_LANGUAGE,
   DEFAULT_VOICE_SETTINGS,
   VOICE_CONFIG,
+  VOICE_LANGUAGE_SUPPORT,
   type VoiceLanguageCode,
 } from "@/lib/voice/config";
 
 export const runtime = "nodejs";
 
 const DEFAULT_SYSTEM_PROMPT =
-  "You are the PranAI Voice Assistant, a friendly and professional expert on AI voice and chat agents for businesses. Keep answers concise, helpful, and under 3 sentences. Explain capabilities clearly without overpromising. If the user speaks a selected supported language, respond in that same language. If the language is unsupported, reply in English.";
+  "You are the pran.ai Voice Assistant. Be warm, friendly, and professional in every reply. Keep responses concise and clear, usually 1-3 short sentences. If the user asks about pricing, integrations, security, or setup, you may use up to 4 short sentences for clarity. Never be rude, defensive, or robotic. Explain capabilities clearly without overpromising.";
 
 const PRANAI_PRODUCT_CONTEXT_PROMPT = `
-pran.ai helps businesses launch AI voice/chat agents for support, lead qualification, receptionist flows, and cart recovery.
-Speak with practical business value: faster response time, lower repetitive workload, better conversion, and scalable multilingual operations.
-For pricing, explain demo numbers are package-estimated (not raw provider pass-through) and discuss ROI by volume + automation impact.
-For integrations, recommend phased rollout and mention CRM/helpdesk/telephony/calendar/order-system/webhook patterns.
-Never invent unavailable plan terms, SLAs, or guarantees.
+Brand pronunciation and identity:
+- Brand name is written as "pran.ai".
+- Pronunciation should be natural and consistent as "pranai" (one smooth word).
+- Never spell the brand letter-by-letter (for example: "P R A N", "A I", or "P R A N dot A I"), unless the user explicitly asks for spelling.
+- If needed, clarify once naturally: "pran.ai, pronounced pranai."
+
+What pran.ai does:
+- pran.ai helps businesses launch AI voice and chat agents for support, lead qualification, receptionist flows, and cart recovery.
+- Typical value: faster response times, reduced repetitive workload, better conversion, multilingual coverage, and 24/7 availability.
+- Deployment options include phone workflows and web/chat experiences.
+
+Pricing model guidance:
+- Explain that product pricing is based on active conversation usage (minutes/volume driven), not per-seat licensing.
+- Clarify that demo cost values are package-estimated guidance, not raw provider pass-through billing.
+- Do not invent exact plan names, discounts, SLAs, or contract terms unless explicitly provided.
+
+Integration guidance:
+- Explain integration is typically lightweight and phased.
+- Mention common integration patterns: Salesforce, HubSpot, Zendesk, Freshworks, telephony systems, calendars, order systems, internal APIs, and webhooks.
+- If asked "how to integrate", provide a simple path: discovery -> pilot -> connect data/FAQs -> connect systems -> go live -> monitor and iterate.
+
+FAQ and trust guidance:
+- Voice quality: natural, conversational, not robotic.
+- Unknown answers: gracefully escalate with context handoff to humans.
+- Data and security: emphasize enterprise-minded handling, encryption in transit/at rest, and controlled data usage.
+- Language switching: support multilingual experiences and preserve context.
+
+Response quality guardrails:
+- Be practical and honest; avoid hype.
+- If uncertain, say what is known and suggest next best step.
+- Keep tone friendly and reassuring across all agent modes.
 `.trim();
 
 interface ConversationMessage {
@@ -42,13 +69,13 @@ const MIN_INPUT_AUDIO_SECONDS = Number(process.env.VOICE_MIN_INPUT_SECONDS ?? "0
 
 const AGENT_MODE_PROMPTS: Record<VoiceAgentMode, string> = {
   customer_support:
-    "You are operating in Customer Support mode for pran.ai deployments. Prioritize fast issue resolution, intent triage, and clear next steps. When relevant, explain how voice/chat automation reduces repetitive ticket load and improves response times.",
+    "You are operating in Customer Support mode for pran.ai deployments. Prioritize fast issue resolution, intent triage, and clear next steps. Keep tone empathetic and reassuring. When relevant, explain how voice/chat automation reduces repetitive ticket load and improves response times.",
   lead_qualification:
-    "You are operating in Lead Qualification mode for pran.ai. Qualify fit by use case, monthly conversation volume, required integrations, language needs, and rollout timeline. Guide toward a practical pilot and next-step demo/discovery call.",
+    "You are operating in Lead Qualification mode for pran.ai. Qualify fit by use case, monthly conversation volume, required integrations, language needs, and rollout timeline. Keep tone consultative and friendly. Guide toward a practical pilot and next-step demo/discovery call.",
   receptionist:
     "You are operating in Receptionist mode for pran.ai-powered front desk flows. Greet warmly, capture essentials, route intelligently, and propose automation handoffs (booking, FAQ handling, lead capture) where useful.",
   cart_recovery:
-    "You are operating in Cart Recovery mode for pran.ai commerce automation. Identify objections (price, shipping, trust, timing), respond with concise reassurance, and nudge toward completion without being pushy. Reference how personalized voice/chat follow-ups can lift conversion.",
+    "You are operating in Cart Recovery mode for pran.ai commerce automation. Identify objections (price, shipping, trust, timing), respond with concise reassurance, and nudge toward completion without being pushy. Keep tone helpful and positive. Reference how personalized voice/chat follow-ups can lift conversion.",
 };
 
 interface CostBreakdown {
@@ -113,6 +140,14 @@ async function readErrorBody(res: Response): Promise<string> {
   } catch {
     return "Unable to read provider error body.";
   }
+}
+
+function isCartesiaLanguageSupportError(details: string): boolean {
+  const normalized = details.toLowerCase();
+  return (
+    normalized.includes("model does not support language") ||
+    (normalized.includes("invalid model id") && normalized.includes("language"))
+  );
 }
 
 async function transcribeWithDeepgram(
@@ -208,7 +243,7 @@ async function generateWithGroq(
       {
         role: "system",
         content:
-          `Selected response language is ${languageLabel}. Reply in 1-2 short sentences for voice, unless user explicitly asks for detail.`,
+          `Selected response language is ${languageLabel}. Reply in that language. Keep voice-friendly brevity (usually 1-3 short sentences, up to 4 for pricing/integrations/FAQ clarity).`,
       },
       ...history,
       { role: "user", content: transcript },
@@ -265,6 +300,9 @@ async function synthesizeWithCartesia(
 
   if (!res.ok) {
     const details = await readErrorBody(res);
+    if (isCartesiaLanguageSupportError(details)) {
+      throw new Error(`CARTESIA_LANGUAGE_UNSUPPORTED::${details}`);
+    }
     throw new Error(`Cartesia TTS failed (${res.status}): ${details}`);
   }
 
@@ -344,8 +382,21 @@ export async function POST(req: NextRequest) {
     const language = sanitizeLanguage(body.language);
     const agentMode = sanitizeAgentMode(body.agentMode);
     const customPrompt = sanitizeCustomPrompt(body.customPrompt);
+    const languageSupport = VOICE_LANGUAGE_SUPPORT[language];
     const voiceEntry = VOICE_CONFIG[language];
     const audioBase64 = parseAudioBase64(body);
+
+    if (!languageSupport?.tts) {
+      return NextResponse.json(
+        {
+          error:
+            `Live voice output is not yet available for ${voiceEntry.label} in this demo. ` +
+            "Please try English or Hindi for now.",
+          code: "TTS_LANGUAGE_UNSUPPORTED",
+        },
+        { status: 422 },
+      );
+    }
 
     if (!audioBase64) {
       return NextResponse.json(
@@ -417,12 +468,29 @@ export async function POST(req: NextRequest) {
       completionTokens = llmResponse.completionTokens;
     }
 
-    const ttsAudio = await synthesizeWithCartesia(
-      assistantText,
-      language,
-      voiceEntry.voice_id,
-      cartesiaApiKey,
-    );
+    let ttsAudio: Buffer;
+    try {
+      ttsAudio = await synthesizeWithCartesia(
+        assistantText,
+        language,
+        voiceEntry.voice_id,
+        cartesiaApiKey,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("CARTESIA_LANGUAGE_UNSUPPORTED::")) {
+        return NextResponse.json(
+          {
+            error:
+              `Live voice output is not yet available for ${voiceEntry.label} in this demo. ` +
+              "Please try English or Hindi for now.",
+            code: "TTS_LANGUAGE_UNSUPPORTED",
+          },
+          { status: 422 },
+        );
+      }
+      throw error;
+    }
     const estimatedCost = estimateTurnCostUsd({
       inputAudioBytes: audioBuffer.length,
       outputAudioBytes: ttsAudio.length,

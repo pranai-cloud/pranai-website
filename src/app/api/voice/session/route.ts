@@ -3,6 +3,7 @@ import {
   DEFAULT_VOICE_LANGUAGE,
   DEFAULT_VOICE_SETTINGS,
   VOICE_CONFIG,
+  VOICE_LANGUAGE_SUPPORT,
 } from "@/lib/voice/config";
 
 export const runtime = "nodejs";
@@ -14,10 +15,12 @@ export async function GET() {
     voiceName: entry.name,
     sttLang: entry.stt_lang,
     voiceId: entry.voice_id,
+    support: VOICE_LANGUAGE_SUPPORT[code as keyof typeof VOICE_LANGUAGE_SUPPORT],
   }));
 
   return NextResponse.json({
     languages,
+    supportMatrix: VOICE_LANGUAGE_SUPPORT,
     defaults: {
       language: DEFAULT_VOICE_LANGUAGE,
       audio: {

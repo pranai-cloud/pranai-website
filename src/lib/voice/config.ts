@@ -8,17 +8,22 @@ export interface VoiceConfigEntry {
   label: string;
 }
 
+export interface VoiceLanguageSupport {
+  stt: boolean;
+  tts: boolean;
+}
+
 export const VOICE_CONFIG: Record<VoiceLanguageCode, VoiceConfigEntry> = {
   en: {
-    voice_id: "e8e5fffb-252c-436d-b842-8879b84445b6",
-    name: "Cathy",
+    voice_id: "e07c00bc-4134-4eae-9ea4-1a55fb45746b",
+    name: "Brooke",
     lang: "en",
     stt_lang: "en",
     label: "English",
   },
   hi: {
-    voice_id: "28ca2041-5dda-42df-8123-f58ea9c3da00",
-    name: "Palak",
+    voice_id: "faf0731e-dfb9-4cfc-8119-259a79b27e12",
+    name: "Riya",
     lang: "hi",
     stt_lang: "hi",
     label: "Hindi",
@@ -38,8 +43,8 @@ export const VOICE_CONFIG: Record<VoiceLanguageCode, VoiceConfigEntry> = {
     label: "Kannada",
   },
   mr: {
-    voice_id: "5c32dce6-936a-4892-b131-bafe474afe5f",
-    name: "Anika",
+    voice_id: "f227bc18-3704-47fe-b759-8c78a450fdfa",
+    name: "Suresh",
     lang: "mr",
     stt_lang: "mr",
     label: "Marathi",
@@ -51,6 +56,15 @@ export const VOICE_CONFIG: Record<VoiceLanguageCode, VoiceConfigEntry> = {
     stt_lang: "bn",
     label: "Bengali",
   },
+};
+
+export const VOICE_LANGUAGE_SUPPORT: Record<VoiceLanguageCode, VoiceLanguageSupport> = {
+  en: { stt: true, tts: true },
+  hi: { stt: true, tts: true },
+  te: { stt: true, tts: true },
+  kn: { stt: true, tts: true },
+  mr: { stt: true, tts: true },
+  bn: { stt: true, tts: true },
 };
 
 export const DEFAULT_VOICE_LANGUAGE: VoiceLanguageCode = "en";
@@ -69,7 +83,7 @@ export const DEFAULT_VOICE_SETTINGS = {
     temperature: 0.7,
   },
   cartesia: {
-    modelId: "sonic-multilingual",
+    modelId: "sonic-3",
     sampleRate: 16000,
     encoding: "pcm_s16le",
     apiVersion: "2025-04-16",

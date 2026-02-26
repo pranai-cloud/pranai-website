@@ -594,27 +594,27 @@ export function InteractiveVoiceWidget() {
           </div>
         ) : (
           <>
-            <div className="mb-6 rounded-2xl border border-black/[0.08] bg-stone-50/70 px-6 py-7 sm:px-7 sm:py-8">
+            <div className="mb-6 rounded-2xl border border-black/[0.08] bg-stone-50/70 px-5 py-6 sm:px-6 sm:py-7">
               <div className="relative z-10">
                 <div className="flex flex-col items-center text-center">
                   <p className="text-base font-semibold text-primary">{activeVoiceName}</p>
                   <p className="mt-1 text-xs text-secondary">{formattedCallDuration}</p>
 
-                  <div className="mt-6 w-full max-w-[520px]">
+                  <div className="mt-5 w-full max-w-[540px]">
                     <motion.svg
-                      viewBox="0 0 680 220"
-                      className="h-32 w-full"
+                      viewBox="0 0 680 420"
+                      className="h-44 w-full"
                       preserveAspectRatio="none"
                       animate={
                         status === "recording" || status === "playing"
-                          ? { scaleY: [0.82, 1.22, 0.9], opacity: [0.5, 1, 0.78] }
+                          ? { scaleY: [0.78, 1.24, 0.88], opacity: [0.48, 1, 0.8] }
                           : status === "processing"
-                            ? { scaleY: [0.88, 1.08, 0.9], opacity: [0.42, 0.74, 0.42] }
-                            : { scaleY: 0.78, opacity: 0.36 }
+                            ? { scaleY: [0.84, 1.1, 0.9], opacity: [0.4, 0.76, 0.4] }
+                            : { scaleY: 0.74, opacity: 0.34 }
                       }
                       transition={{
                         repeat: status === "idle" ? 0 : Infinity,
-                        duration: status === "processing" ? 2 : 1.6,
+                        duration: status === "processing" ? 2.1 : 1.8,
                         ease: "easeInOut",
                       }}
                     >
@@ -629,52 +629,78 @@ export function InteractiveVoiceWidget() {
                       <motion.g
                         animate={
                           status === "recording" || status === "playing"
-                            ? { x: [0, -28, 0], y: [0, -2, 0] }
+                            ? { x: [0, -34, 0], y: [0, -5, 0] }
                             : status === "processing"
-                              ? { x: [0, -12, 0], y: [0, -1, 0] }
+                              ? { x: [0, -14, 0], y: [0, -2, 0] }
                               : { x: 0, y: 0 }
                         }
                         transition={{
                           repeat: status === "idle" ? 0 : Infinity,
-                          duration: status === "processing" ? 3.6 : 2.7,
+                          duration: status === "processing" ? 3.9 : 3.1,
                           ease: "easeInOut",
                         }}
                       >
                         {Array.from({ length: 7 }).map((_, index) => (
                           <path
                             key={index}
-                            d="M-120 110 C -40 10, 40 210, 120 110 C 200 10, 280 210, 360 110 C 440 10, 520 210, 600 110 C 680 10, 760 210, 840 110"
+                            d="M-120 210 C -40 18, 40 402, 120 210 C 200 18, 280 402, 360 210 C 440 18, 520 402, 600 210 C 680 18, 760 402, 840 210"
                             stroke="url(#voiceWaveGradient)"
-                            strokeWidth={index < 2 ? 1.7 : 1.2}
+                            strokeWidth={index < 2 ? 1.9 : 1.3}
                             fill="none"
-                            opacity={0.18 + index * 0.09}
-                            transform={`translate(0 ${index * 6 - 22})`}
+                            opacity={0.16 + index * 0.09}
+                            transform={`translate(0 ${index * 11 - 38})`}
                           />
                         ))}
                       </motion.g>
                       <motion.g
                         animate={
                           status === "recording" || status === "playing"
-                            ? { x: [0, 20, 0], y: [0, 1.5, 0] }
+                            ? { x: [0, 26, 0], y: [0, 3.5, 0] }
                             : status === "processing"
-                              ? { x: [0, 8, 0], y: [0, 1, 0] }
+                              ? { x: [0, 10, 0], y: [0, 2, 0] }
                               : { x: 0, y: 0 }
                         }
                         transition={{
                           repeat: status === "idle" ? 0 : Infinity,
-                          duration: status === "processing" ? 3.2 : 2.4,
+                          duration: status === "processing" ? 3.4 : 2.8,
                           ease: "easeInOut",
                         }}
                       >
                         {Array.from({ length: 5 }).map((_, index) => (
                           <path
                             key={`b-${index}`}
-                            d="M-130 112 C -35 30, 60 194, 155 112 C 250 30, 345 194, 440 112 C 535 30, 630 194, 725 112 C 820 30, 915 194, 1010 112"
+                            d="M-130 210 C -35 56, 60 364, 155 210 C 250 56, 345 364, 440 210 C 535 56, 630 364, 725 210 C 820 56, 915 364, 1010 210"
                             stroke="url(#voiceWaveGradient)"
-                            strokeWidth={1}
+                            strokeWidth={1.1}
                             fill="none"
-                            opacity={0.12 + index * 0.06}
-                            transform={`translate(0 ${index * 7 - 16})`}
+                            opacity={0.1 + index * 0.07}
+                            transform={`translate(0 ${index * 12 - 30})`}
+                          />
+                        ))}
+                      </motion.g>
+                      <motion.g
+                        animate={
+                          status === "recording" || status === "playing"
+                            ? { x: [0, -18, 0], y: [0, 2.5, 0] }
+                            : status === "processing"
+                              ? { x: [0, -7, 0], y: [0, 1, 0] }
+                              : { x: 0, y: 0 }
+                        }
+                        transition={{
+                          repeat: status === "idle" ? 0 : Infinity,
+                          duration: status === "processing" ? 3.1 : 2.5,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        {Array.from({ length: 3 }).map((_, index) => (
+                          <path
+                            key={`c-${index}`}
+                            d="M-130 210 C -45 80, 40 340, 125 210 C 210 80, 295 340, 380 210 C 465 80, 550 340, 635 210 C 720 80, 805 340, 890 210"
+                            stroke="url(#voiceWaveGradient)"
+                            strokeWidth={0.95}
+                            fill="none"
+                            opacity={0.18 + index * 0.05}
+                            transform={`translate(0 ${index * 14 - 12})`}
                           />
                         ))}
                       </motion.g>
