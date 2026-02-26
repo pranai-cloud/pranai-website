@@ -41,7 +41,7 @@ export function InteractiveVoiceWidget() {
         <motion.div
             layout={!lowPerfMode}
             initial={lowPerfMode ? false : { opacity: 0, y: 12 }}
-            animate={lowPerfMode ? undefined : { opacity: 1, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={lowPerfMode ? { duration: 0 } : { type: "spring", stiffness: 120, damping: 20, delay: 0.1 }}
             className="relative w-full mx-auto max-w-lg overflow-hidden rounded-3xl border border-black/[0.06] bg-white p-6 sm:p-8 shadow-sm"
         >
