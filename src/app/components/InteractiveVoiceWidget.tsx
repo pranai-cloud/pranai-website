@@ -181,6 +181,7 @@ export function InteractiveVoiceWidget() {
   const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("INR");
   const [agentMode, setAgentMode] = useState<AgentMode>("customer_support");
   const [customPrompt, setCustomPrompt] = useState("");
+  const [needsAudioEnable, setNeedsAudioEnable] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -377,13 +378,17 @@ export function InteractiveVoiceWidget() {
       setLastResponseAudio({ audioBase64: responseAudio, audioMimeType: responseAudioMime });
       try {
         await playAssistantAudio(responseAudio, responseAudioMime);
+        setNeedsAudioEnable(false);
+        setErrorMessage("");
       } catch (error) {
         if (isAutoplayBlockedError(error)) {
           try {
             await unlockBrowserAudio();
             await playAssistantAudio(responseAudio, responseAudioMime);
+            setNeedsAudioEnable(false);
             setErrorMessage("");
           } catch (retryError) {
+            setNeedsAudioEnable(isAutoplayBlockedError(retryError));
             setErrorMessage(
               isAutoplayBlockedError(retryError)
                 ? "Playback was blocked by your browser. Tap 'Play response audio' below."
@@ -393,6 +398,7 @@ export function InteractiveVoiceWidget() {
             );
           }
         } else {
+          setNeedsAudioEnable(false);
           setErrorMessage(
             error instanceof Error ? error.message : "Failed to play assistant audio.",
           );
@@ -405,12 +411,36 @@ export function InteractiveVoiceWidget() {
   const replayLastAudio = () => {
     if (!lastResponseAudio) return;
     setErrorMessage("");
-    void unlockBrowserAudio()
-      .then(() => playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType))
+    void playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType)
+      .then(() => {
+        setNeedsAudioEnable(false);
+      })
       .catch((error) => {
+        setNeedsAudioEnable(isAutoplayBlockedError(error));
         setErrorMessage(
           isAutoplayBlockedError(error)
-            ? "Playback was blocked by your browser. Tap again to retry."
+            ? "Playback was blocked by your browser. Tap 'Enable audio & replay' below."
+            : error instanceof Error
+              ? error.message
+              : "Failed to play assistant audio.",
+        );
+      })
+      .finally(() => setStatus("idle"));
+  };
+
+  const enableAudioAndReplay = () => {
+    if (!lastResponseAudio) return;
+    setErrorMessage("");
+    void unlockBrowserAudio()
+      .then(() => playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType))
+      .then(() => {
+        setNeedsAudioEnable(false);
+      })
+      .catch((error) => {
+        setNeedsAudioEnable(isAutoplayBlockedError(error));
+        setErrorMessage(
+          isAutoplayBlockedError(error)
+            ? "Playback is still blocked by your browser. Tap once on the page, then try again."
             : error instanceof Error
               ? error.message
               : "Failed to play assistant audio.",
@@ -868,6 +898,18 @@ export function InteractiveVoiceWidget() {
               className="rounded-full border border-black/[0.1] bg-white px-4 py-2 text-xs font-semibold text-primary transition hover:bg-stone-50"
             >
               Play response audio
+            </button>
+          </div>
+        )}
+
+        {needsAudioEnable && lastResponseAudio && status !== "recording" && status !== "processing" && (
+          <div className="mt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={enableAudioAndReplay}
+              className="rounded-full border border-pran-orange/30 bg-pran-orange/10 px-4 py-2 text-xs font-semibold text-pran-orange transition hover:bg-pran-orange/15"
+            >
+              Enable audio & replay
             </button>
           </div>
         )}
