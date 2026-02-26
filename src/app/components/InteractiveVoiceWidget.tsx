@@ -193,7 +193,7 @@ export function InteractiveVoiceWidget() {
     return "Ready to talk";
   }, [status]);
 
-  const usdToInrRate = Number(process.env.NEXT_PUBLIC_USD_TO_INR ?? "83");
+  const usdToInrRate = Number(process.env.NEXT_PUBLIC_USD_TO_INR ?? "91");
   const toDisplayCurrency = (usdValue: number) =>
     displayCurrency === "INR" ? usdValue * usdToInrRate : usdValue;
   const formatMoney = (usdValue: number) => {
