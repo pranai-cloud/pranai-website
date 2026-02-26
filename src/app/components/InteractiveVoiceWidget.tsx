@@ -433,7 +433,6 @@ export function InteractiveVoiceWidget() {
 
     try {
       setErrorMessage("");
-      setStatus("recording");
       setCallElapsedSeconds(0);
       setTranscript("");
       setAssistantText("");
@@ -466,6 +465,7 @@ export function InteractiveVoiceWidget() {
       };
 
       recorder.start(200);
+      setStatus("recording");
     } catch (error) {
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
       setStatus("error");
@@ -482,6 +482,8 @@ export function InteractiveVoiceWidget() {
     if (!recorder || recorder.state === "inactive") {
       return;
     }
+    // This click is a strong user gesture; prime audio here so reply playback is less likely to be blocked.
+    void unlockBrowserAudio();
     setStatus("processing");
     recorder.stop();
   };
@@ -496,9 +498,7 @@ export function InteractiveVoiceWidget() {
       return;
     }
     if (status === "idle" || status === "error") {
-      void unlockBrowserAudio().finally(() => {
-        void startRecording();
-      });
+      void startRecording();
     }
   };
 
@@ -594,16 +594,16 @@ export function InteractiveVoiceWidget() {
           </div>
         ) : (
           <>
-            <div className="mb-4 rounded-2xl border border-black/[0.08] bg-stone-50/70 px-4 py-4 sm:px-5 sm:py-5">
+            <div className="mb-4 rounded-2xl border border-black/[0.08] bg-stone-50/70 px-3 py-3 sm:px-5 sm:py-5">
               <div className="relative z-10">
                 <div className="flex flex-col items-center text-center">
                   <p className="text-sm font-semibold text-primary">{activeVoiceName}</p>
                   <p className="mt-0.5 text-xs text-secondary">{formattedCallDuration}</p>
 
-                  <div className="mt-3 w-full max-w-[430px]">
+                  <div className="mt-2 w-full max-w-[340px] sm:mt-3 sm:max-w-[430px]">
                     <motion.svg
                       viewBox="0 0 680 420"
-                      className="h-28 w-full"
+                      className="h-20 w-full sm:h-28"
                       preserveAspectRatio="none"
                       animate={
                         status === "recording" || status === "playing"
@@ -713,7 +713,7 @@ export function InteractiveVoiceWidget() {
                     onClick={onPrimaryAction}
                     disabled={status === "processing"}
                     whileTap={status === "processing" ? undefined : { scale: 0.96 }}
-                    className={`mt-3 inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition-all ${
+                    className={`mt-2.5 inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition-all ${
                       status === "recording"
                         ? "bg-red-500 hover:bg-red-600 shadow-red-500/30"
                         : status === "playing"
@@ -732,7 +732,7 @@ export function InteractiveVoiceWidget() {
                     )}
                   </motion.button>
 
-                  <div className="mt-2.5 flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[10px] text-primary shadow-sm">
+                  <div className="mt-2 flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[10px] text-primary shadow-sm">
                     {status === "processing" ? (
                       <Loader2 className="h-2.5 w-2.5 animate-spin text-pran-orange" />
                     ) : status === "playing" ? (
