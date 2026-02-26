@@ -1,8 +1,10 @@
 export type VoiceLanguageCode = "en" | "hi" | "te" | "kn" | "mr" | "bn";
+export type VoiceGender = "feminine" | "masculine" | "neutral";
 
 export interface VoiceConfigEntry {
   voice_id: string;
   name: string;
+  gender: VoiceGender;
   lang: VoiceLanguageCode;
   stt_lang: string;
   label: string;
@@ -17,6 +19,7 @@ export const VOICE_CONFIG: Record<VoiceLanguageCode, VoiceConfigEntry> = {
   en: {
     voice_id: "e07c00bc-4134-4eae-9ea4-1a55fb45746b",
     name: "Brooke",
+    gender: "feminine",
     lang: "en",
     stt_lang: "en",
     label: "English",
@@ -24,6 +27,7 @@ export const VOICE_CONFIG: Record<VoiceLanguageCode, VoiceConfigEntry> = {
   hi: {
     voice_id: "faf0731e-dfb9-4cfc-8119-259a79b27e12",
     name: "Riya",
+    gender: "feminine",
     lang: "hi",
     stt_lang: "hi",
     label: "Hindi",
@@ -31,6 +35,7 @@ export const VOICE_CONFIG: Record<VoiceLanguageCode, VoiceConfigEntry> = {
   te: {
     voice_id: "07bc462a-c644-49f1-baf7-82d5599131be",
     name: "Sindhu",
+    gender: "feminine",
     lang: "te",
     stt_lang: "te",
     label: "Telugu",
@@ -38,6 +43,7 @@ export const VOICE_CONFIG: Record<VoiceLanguageCode, VoiceConfigEntry> = {
   kn: {
     voice_id: "7c6219d2-e8d2-462c-89d8-7ecba7c75d65",
     name: "Divya",
+    gender: "feminine",
     lang: "kn",
     stt_lang: "kn",
     label: "Kannada",
@@ -45,6 +51,7 @@ export const VOICE_CONFIG: Record<VoiceLanguageCode, VoiceConfigEntry> = {
   mr: {
     voice_id: "f227bc18-3704-47fe-b759-8c78a450fdfa",
     name: "Suresh",
+    gender: "masculine",
     lang: "mr",
     stt_lang: "mr",
     label: "Marathi",
@@ -52,6 +59,7 @@ export const VOICE_CONFIG: Record<VoiceLanguageCode, VoiceConfigEntry> = {
   bn: {
     voice_id: "2ba861ea-7cdc-43d1-8608-4045b5a41de5",
     name: "Rubel",
+    gender: "masculine",
     lang: "bn",
     stt_lang: "bn",
     label: "Bengali",

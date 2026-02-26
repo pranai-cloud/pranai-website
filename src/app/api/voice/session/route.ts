@@ -13,6 +13,7 @@ export async function GET() {
     code,
     label: entry.label,
     voiceName: entry.name,
+    voiceGender: entry.gender,
     sttLang: entry.stt_lang,
     voiceId: entry.voice_id,
     support: VOICE_LANGUAGE_SUPPORT[code as keyof typeof VOICE_LANGUAGE_SUPPORT],

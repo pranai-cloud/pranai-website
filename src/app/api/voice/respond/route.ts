@@ -5,6 +5,7 @@ import {
   DEFAULT_VOICE_SETTINGS,
   VOICE_CONFIG,
   VOICE_LANGUAGE_SUPPORT,
+  type VoiceGender,
   type VoiceLanguageCode,
 } from "@/lib/voice/config";
 
@@ -227,6 +228,8 @@ async function transcribeWithDeepgram(
 async function generateWithGroq(
   transcript: string,
   languageLabel: string,
+  voiceName: string,
+  voiceGender: VoiceGender,
   conversation: ConversationMessage[],
   agentMode: VoiceAgentMode,
   customPrompt: string | null,
@@ -274,6 +277,13 @@ async function generateWithGroq(
         role: "system",
         content:
           `Selected response language is ${languageLabel}. Reply in that language. Keep voice-friendly brevity (usually 1-3 short sentences, up to 4 for pricing/integrations/FAQ clarity).`,
+      },
+      {
+        role: "system",
+        content:
+          `Voice persona name: ${voiceName}. Voice gender presentation: ${voiceGender}. ` +
+          "In gendered languages, ALWAYS use first-person grammar that matches this gender and never switch gendered forms. " +
+          "Hindi examples: feminine -> 'मैं समझती हूँ', 'मैं गई थी'; masculine -> 'मैं समझता हूँ', 'मैं गया था'.",
       },
       ...history,
       { role: "user", content: transcript },
@@ -488,6 +498,8 @@ export async function POST(req: NextRequest) {
       const llmResponse = await generateWithGroq(
         transcript,
         voiceEntry.label,
+        voiceEntry.name,
+        voiceEntry.gender,
         body.conversation ?? [],
         agentMode,
         customPrompt,
