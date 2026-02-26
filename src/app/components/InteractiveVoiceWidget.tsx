@@ -182,14 +182,12 @@ export function InteractiveVoiceWidget() {
   const [agentMode, setAgentMode] = useState<AgentMode>("customer_support");
   const [customPrompt, setCustomPrompt] = useState("");
   const [needsAudioEnable, setNeedsAudioEnable] = useState(false);
-  const [fallbackAudioUrl, setFallbackAudioUrl] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
   const activeAudioUrlRef = useRef<string | null>(null);
-  const fallbackAudioUrlRef = useRef<string | null>(null);
   const audioUnlockedRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -275,21 +273,8 @@ export function InteractiveVoiceWidget() {
       if (activeAudioUrlRef.current) {
         URL.revokeObjectURL(activeAudioUrlRef.current);
       }
-      if (fallbackAudioUrlRef.current) {
-        URL.revokeObjectURL(fallbackAudioUrlRef.current);
-      }
     };
   }, []);
-
-  const setFallbackAudioFromPayload = (audioBase64: string, audioMimeType?: string) => {
-    const audioBlob = createPlayableAudioBlob(audioBase64, audioMimeType);
-    const url = URL.createObjectURL(audioBlob);
-    if (fallbackAudioUrlRef.current) {
-      URL.revokeObjectURL(fallbackAudioUrlRef.current);
-    }
-    fallbackAudioUrlRef.current = url;
-    setFallbackAudioUrl(url);
-  };
 
   const stopPlayback = () => {
     if (activeAudioRef.current) {
@@ -394,7 +379,6 @@ export function InteractiveVoiceWidget() {
       try {
         await playAssistantAudio(responseAudio, responseAudioMime);
         setNeedsAudioEnable(false);
-        setFallbackAudioUrl(null);
         setErrorMessage("");
       } catch (error) {
         if (isAutoplayBlockedError(error)) {
@@ -402,10 +386,8 @@ export function InteractiveVoiceWidget() {
             await unlockBrowserAudio();
             await playAssistantAudio(responseAudio, responseAudioMime);
             setNeedsAudioEnable(false);
-            setFallbackAudioUrl(null);
             setErrorMessage("");
           } catch (retryError) {
-            setFallbackAudioFromPayload(responseAudio, responseAudioMime);
             setNeedsAudioEnable(isAutoplayBlockedError(retryError));
             setErrorMessage(
               isAutoplayBlockedError(retryError)
@@ -429,25 +411,36 @@ export function InteractiveVoiceWidget() {
   const replayLastAudio = () => {
     if (!lastResponseAudio) return;
     setErrorMessage("");
-    void playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType)
-      .then(() => {
+    void (async () => {
+      try {
+        await playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType);
         setNeedsAudioEnable(false);
-        setFallbackAudioUrl(null);
-      })
-      .catch((error) => {
-        if (isAutoplayBlockedError(error) && lastResponseAudio) {
-          setFallbackAudioFromPayload(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType);
+      } catch (error) {
+        if (!isAutoplayBlockedError(error)) {
+          setNeedsAudioEnable(false);
+          setErrorMessage(error instanceof Error ? error.message : "Failed to play assistant audio.");
+          return;
         }
-        setNeedsAudioEnable(isAutoplayBlockedError(error));
-        setErrorMessage(
-          isAutoplayBlockedError(error)
-            ? "Playback was blocked by your browser. Tap 'Enable audio & replay' below."
-            : error instanceof Error
-              ? error.message
-              : "Failed to play assistant audio.",
-        );
-      })
-      .finally(() => setStatus("idle"));
+        // Auto-run the same recovery path instead of waiting for another tap.
+        try {
+          await unlockBrowserAudio();
+          await playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType);
+          setNeedsAudioEnable(false);
+          setErrorMessage("");
+        } catch (retryError) {
+          setNeedsAudioEnable(isAutoplayBlockedError(retryError));
+          setErrorMessage(
+            isAutoplayBlockedError(retryError)
+              ? "Playback is still blocked by your browser. Tap 'Enable audio & replay' below."
+              : retryError instanceof Error
+                ? retryError.message
+                : "Failed to play assistant audio.",
+          );
+        }
+      } finally {
+        setStatus("idle");
+      }
+    })();
   };
 
   const enableAudioAndReplay = () => {
@@ -457,12 +450,8 @@ export function InteractiveVoiceWidget() {
       .then(() => playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType))
       .then(() => {
         setNeedsAudioEnable(false);
-        setFallbackAudioUrl(null);
       })
       .catch((error) => {
-        if (isAutoplayBlockedError(error) && lastResponseAudio) {
-          setFallbackAudioFromPayload(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType);
-        }
         setNeedsAudioEnable(isAutoplayBlockedError(error));
         setErrorMessage(
           isAutoplayBlockedError(error)
@@ -937,12 +926,6 @@ export function InteractiveVoiceWidget() {
             >
               Enable audio & replay
             </button>
-          </div>
-        )}
-
-        {fallbackAudioUrl && status !== "recording" && status !== "processing" && (
-          <div className="mt-2">
-            <audio className="w-full" controls preload="metadata" src={fallbackAudioUrl} />
           </div>
         )}
 

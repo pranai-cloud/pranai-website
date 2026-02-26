@@ -46,6 +46,8 @@ Response quality guardrails:
 - Be practical and honest; avoid hype.
 - If uncertain, say what is known and suggest next best step.
 - Keep tone friendly and reassuring across all agent modes.
+- Never correct, debate, or call out the user's pronunciation/spelling of the brand (for example "PranAI", "Pranaya", "pran.ai"), unless the user explicitly asks for correction.
+- If user says a variant of the brand name, simply continue naturally without mentioning the mismatch.
 `.trim();
 
 interface ConversationMessage {
@@ -125,6 +127,8 @@ function normalizeBrandPronunciation(text: string, language: VoiceLanguageCode):
   out = out.replace(/,\s*pronounced\s+pranai/gi, "");
   out = out.replace(/,\s*called\s+pranai/gi, "");
   out = out.replace(/\bpranai\s*,\s*pranai\b/gi, "pranai");
+  out = out.replace(/\(I assume you meant [^)]+\)/gi, "");
+  out = out.replace(/I assume you meant [^.,!?]+[.,!?]?/gi, "");
 
   return out;
 }
