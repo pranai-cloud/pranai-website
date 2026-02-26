@@ -18,7 +18,7 @@ Brand pronunciation and identity:
 - Brand name is written as "pran.ai".
 - Pronunciation should be natural and consistent as "pranai" (one smooth word).
 - Never spell the brand letter-by-letter (for example: "P R A N", "A I", or "P R A N dot A I"), unless the user explicitly asks for spelling.
-- If needed, clarify once naturally: "pran.ai, pronounced pranai."
+- Do not mention pronunciation unless the user explicitly asks how to pronounce the brand.
 
 What pran.ai does:
 - pran.ai helps businesses launch AI voice and chat agents for support, lead qualification, receptionist flows, and cart recovery.
@@ -96,6 +96,36 @@ interface VoiceRespondRequestBody {
   conversation?: ConversationMessage[];
   agentMode?: string;
   customPrompt?: string;
+}
+
+function localizedBrandName(language: VoiceLanguageCode): string {
+  if (language === "hi" || language === "mr") return "प्रनाई";
+  if (language === "bn") return "প্রানাই";
+  return "pranai";
+}
+
+function normalizeBrandPronunciation(text: string, language: VoiceLanguageCode): string {
+  const brand = localizedBrandName(language);
+  let out = text;
+
+  // Normalize common written variants to one speakable form.
+  out = out.replace(/\bpran\.?ai\b/gi, brand);
+  out = out.replace(/\bpranai\b/gi, brand);
+
+  // Collapse letter-by-letter spellings that sometimes leak from LLM output.
+  out = out.replace(/\bP\s*R\s*A\s*N\s*(?:\.|dot)?\s*A\s*I\b/gi, brand);
+  out = out.replace(/\bP\s*R\s*A\s*N\b/gi, brand);
+  out = out.replace(/\bA\s*I\b/gi, brand);
+
+  // Remove punctuation-separated Devanagari spelling variants seen in logs.
+  out = out.replace(/प्रन\s*[\.\-]?\s*ए\s*[\.\-]?\s*आय/gi, brand);
+
+  // Remove redundant "pronounced X" artifacts when model repeats itself.
+  out = out.replace(/,\s*pronounced\s+pranai/gi, "");
+  out = out.replace(/,\s*called\s+pranai/gi, "");
+  out = out.replace(/\bpranai\s*,\s*pranai\b/gi, "pranai");
+
+  return out;
 }
 
 function sanitizeLanguage(input?: string): VoiceLanguageCode {
@@ -463,7 +493,7 @@ export async function POST(req: NextRequest) {
         customPrompt,
         groqApiKey,
       );
-      assistantText = llmResponse.responseText;
+      assistantText = normalizeBrandPronunciation(llmResponse.responseText, language);
       promptTokens = llmResponse.promptTokens;
       completionTokens = llmResponse.completionTokens;
     }

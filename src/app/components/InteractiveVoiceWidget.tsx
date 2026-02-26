@@ -594,16 +594,16 @@ export function InteractiveVoiceWidget() {
           </div>
         ) : (
           <>
-            <div className="mb-6 rounded-2xl border border-black/[0.08] bg-stone-50/70 px-5 py-6 sm:px-6 sm:py-7">
+            <div className="mb-4 rounded-2xl border border-black/[0.08] bg-stone-50/70 px-4 py-4 sm:px-5 sm:py-5">
               <div className="relative z-10">
                 <div className="flex flex-col items-center text-center">
-                  <p className="text-base font-semibold text-primary">{activeVoiceName}</p>
-                  <p className="mt-1 text-xs text-secondary">{formattedCallDuration}</p>
+                  <p className="text-sm font-semibold text-primary">{activeVoiceName}</p>
+                  <p className="mt-0.5 text-xs text-secondary">{formattedCallDuration}</p>
 
-                  <div className="mt-5 w-full max-w-[540px]">
+                  <div className="mt-3 w-full max-w-[430px]">
                     <motion.svg
                       viewBox="0 0 680 420"
-                      className="h-44 w-full"
+                      className="h-28 w-full"
                       preserveAspectRatio="none"
                       animate={
                         status === "recording" || status === "playing"
@@ -713,7 +713,7 @@ export function InteractiveVoiceWidget() {
                     onClick={onPrimaryAction}
                     disabled={status === "processing"}
                     whileTap={status === "processing" ? undefined : { scale: 0.96 }}
-                    className={`mt-5 inline-flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition-all ${
+                    className={`mt-3 inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition-all ${
                       status === "recording"
                         ? "bg-red-500 hover:bg-red-600 shadow-red-500/30"
                         : status === "playing"
@@ -722,23 +722,23 @@ export function InteractiveVoiceWidget() {
                     } ${status === "processing" ? "cursor-not-allowed opacity-80" : ""}`}
                   >
                     {status === "recording" ? (
-                      <Square className="h-4 w-4 fill-current" />
+                      <Square className="h-3.5 w-3.5 fill-current" />
                     ) : status === "processing" ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : status === "playing" ? (
-                      <Volume2 className="h-4 w-4" />
+                      <Volume2 className="h-3.5 w-3.5" />
                     ) : (
-                      <Mic className="h-4 w-4" />
+                      <Mic className="h-3.5 w-3.5" />
                     )}
                   </motion.button>
 
-                  <div className="mt-4 flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[11px] text-primary shadow-sm">
+                  <div className="mt-2.5 flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[10px] text-primary shadow-sm">
                     {status === "processing" ? (
-                      <Loader2 className="h-3 w-3 animate-spin text-pran-orange" />
+                      <Loader2 className="h-2.5 w-2.5 animate-spin text-pran-orange" />
                     ) : status === "playing" ? (
-                      <Volume2 className="h-3 w-3 text-pran-orange" />
+                      <Volume2 className="h-2.5 w-2.5 text-pran-orange" />
                     ) : (
-                      <Sparkles className="h-3 w-3 text-pran-orange" />
+                      <Sparkles className="h-2.5 w-2.5 text-pran-orange" />
                     )}
                     {statusLabel}
                   </div>
