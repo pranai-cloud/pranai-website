@@ -140,6 +140,10 @@ function createPlayableAudioBlob(audioBase64: string, audioMimeType?: string): B
   return createWavBlobFromPcm(audioBase64, 16000);
 }
 
+function isAutoplayBlockedError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "NotAllowedError";
+}
+
 async function convertBlobToPcmBase64(blob: Blob): Promise<string> {
   const arrayBuffer = await blob.arrayBuffer();
   const audioContext = new AudioContext();
@@ -374,15 +378,25 @@ export function InteractiveVoiceWidget() {
       try {
         await playAssistantAudio(responseAudio, responseAudioMime);
       } catch (error) {
-        const blockedByAutoplay =
-          error instanceof DOMException && error.name === "NotAllowedError";
-        setErrorMessage(
-          blockedByAutoplay
-            ? "Playback was blocked by your browser. Tap 'Play response audio' below."
-            : error instanceof Error
-              ? error.message
-              : "Failed to play assistant audio.",
-        );
+        if (isAutoplayBlockedError(error)) {
+          try {
+            await unlockBrowserAudio();
+            await playAssistantAudio(responseAudio, responseAudioMime);
+            setErrorMessage("");
+          } catch (retryError) {
+            setErrorMessage(
+              isAutoplayBlockedError(retryError)
+                ? "Playback was blocked by your browser. Tap 'Play response audio' below."
+                : retryError instanceof Error
+                  ? retryError.message
+                  : "Failed to play assistant audio.",
+            );
+          }
+        } else {
+          setErrorMessage(
+            error instanceof Error ? error.message : "Failed to play assistant audio.",
+          );
+        }
       }
     }
     setStatus("idle");
@@ -394,9 +408,8 @@ export function InteractiveVoiceWidget() {
     void unlockBrowserAudio()
       .then(() => playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType))
       .catch((error) => {
-        const blockedByAutoplay = error instanceof DOMException && error.name === "NotAllowedError";
         setErrorMessage(
-          blockedByAutoplay
+          isAutoplayBlockedError(error)
             ? "Playback was blocked by your browser. Tap again to retry."
             : error instanceof Error
               ? error.message
@@ -498,6 +511,8 @@ export function InteractiveVoiceWidget() {
       return;
     }
     if (status === "idle" || status === "error") {
+      // Run unlock in parallel with mic prompt to avoid startup delay.
+      void unlockBrowserAudio();
       void startRecording();
     }
   };
