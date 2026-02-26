@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Bot, ChevronDown, Globe2, Loader2, Mic, Sparkles, Square, Volume2, Wallet, Zap } from "lucide-react";
 import {
   DEFAULT_VOICE_LANGUAGE,
@@ -18,6 +18,7 @@ type AgentMode =
   | "receptionist"
   | "cart_recovery";
 type DisplayCurrency = "INR" | "USD";
+const MAX_DEMO_CALL_SECONDS = 120;
 
 const AGENT_MODE_OPTIONS: Array<{ value: AgentMode; label: string }> = [
   { value: "customer_support", label: "Customer Support" },
@@ -156,6 +157,8 @@ async function convertBlobToPcmBase64(blob: Blob): Promise<string> {
 
 export function InteractiveVoiceWidget() {
   const [status, setStatus] = useState<WidgetState>("idle");
+  const [callElapsedSeconds, setCallElapsedSeconds] = useState(0);
+  const [isCallPanelOpen, setIsCallPanelOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<VoiceLanguageCode>(DEFAULT_VOICE_LANGUAGE);
   const [availableLanguages, setAvailableLanguages] = useState<SessionLanguage[]>(
     Object.entries(VOICE_CONFIG).map(([code, value]) => ({
@@ -180,6 +183,8 @@ export function InteractiveVoiceWidget() {
   const recordedChunksRef = useRef<Blob[]>([]);
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
   const activeAudioUrlRef = useRef<string | null>(null);
+  const audioUnlockedRef = useRef(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const prefersReducedMotion = useReducedMotion();
   const lowPerfMode = isMobile || prefersReducedMotion;
@@ -192,6 +197,17 @@ export function InteractiveVoiceWidget() {
     if (status === "error") return "Something went wrong";
     return "Ready to talk";
   }, [status]);
+  const hasCompletedFirstReply = Boolean(lastResponseAudio || assistantText);
+  const activeVoiceName = useMemo(
+    () =>
+      availableLanguages.find((item) => item.code === selectedLanguage)?.voiceName ?? "Voice Agent",
+    [availableLanguages, selectedLanguage],
+  );
+  const formattedCallDuration = useMemo(() => {
+    const minutes = Math.floor(callElapsedSeconds / 60);
+    const seconds = callElapsedSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }, [callElapsedSeconds]);
 
   const usdToInrRate = Number(process.env.NEXT_PUBLIC_USD_TO_INR ?? "91");
   const toDisplayCurrency = (usdValue: number) =>
@@ -234,6 +250,16 @@ export function InteractiveVoiceWidget() {
   }, []);
 
   useEffect(() => {
+    if (status !== "recording" && status !== "processing" && status !== "playing") {
+      return;
+    }
+    const id = window.setInterval(() => {
+      setCallElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [status]);
+
+  useEffect(() => {
     return () => {
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
       if (activeAudioRef.current) {
@@ -257,6 +283,34 @@ export function InteractiveVoiceWidget() {
     setStatus("idle");
   };
 
+  const unlockBrowserAudio = async () => {
+    if (typeof window === "undefined" || audioUnlockedRef.current) return;
+
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+      if (audioContextRef.current.state !== "running") {
+        await audioContextRef.current.resume();
+      }
+
+      // Tiny silent wav priming to satisfy stricter autoplay policies on some devices.
+      const primer = new Audio(
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=",
+      );
+      primer.volume = 0.001;
+      primer.preload = "auto";
+      primer.setAttribute("playsinline", "true");
+      await primer.play();
+      primer.pause();
+      primer.currentTime = 0;
+
+      audioUnlockedRef.current = true;
+    } catch {
+      // Keep fallback UX ("Play response audio") for devices that still block.
+    }
+  };
+
   const playAssistantAudio = async (audioBase64: string, audioMimeType?: string) => {
     const audioBlob = createPlayableAudioBlob(audioBase64, audioMimeType);
     const audioUrl = URL.createObjectURL(audioBlob);
@@ -267,6 +321,8 @@ export function InteractiveVoiceWidget() {
     activeAudioUrlRef.current = audioUrl;
 
     const audio = new Audio(audioUrl);
+    audio.preload = "auto";
+    audio.setAttribute("playsinline", "true");
     activeAudioRef.current = audio;
     setStatus("playing");
 
@@ -335,7 +391,8 @@ export function InteractiveVoiceWidget() {
   const replayLastAudio = () => {
     if (!lastResponseAudio) return;
     setErrorMessage("");
-    void playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType)
+    void unlockBrowserAudio()
+      .then(() => playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType))
       .catch((error) => {
         const blockedByAutoplay = error instanceof DOMException && error.name === "NotAllowedError";
         setErrorMessage(
@@ -377,6 +434,7 @@ export function InteractiveVoiceWidget() {
     try {
       setErrorMessage("");
       setStatus("recording");
+      setCallElapsedSeconds(0);
       setTranscript("");
       setAssistantText("");
 
@@ -438,9 +496,29 @@ export function InteractiveVoiceWidget() {
       return;
     }
     if (status === "idle" || status === "error") {
-      void startRecording();
+      void unlockBrowserAudio().finally(() => {
+        void startRecording();
+      });
     }
   };
+
+  useEffect(() => {
+    const onStartDemo = () => {
+      setIsCallPanelOpen(true);
+      if (status === "idle" || status === "error") {
+        onPrimaryAction();
+      }
+    };
+    window.addEventListener("pranai:voice-demo-start", onStartDemo as EventListener);
+    return () => window.removeEventListener("pranai:voice-demo-start", onStartDemo as EventListener);
+  }, [status]);
+
+  useEffect(() => {
+    if (status === "recording" && callElapsedSeconds >= MAX_DEMO_CALL_SECONDS) {
+      setErrorMessage("Demo calls are limited to 2 minutes. We stopped recording automatically.");
+      stopRecording();
+    }
+  }, [callElapsedSeconds, status]);
 
   return (
     <motion.div
@@ -450,7 +528,7 @@ export function InteractiveVoiceWidget() {
       transition={
         lowPerfMode ? { duration: 0 } : { type: "spring", stiffness: 120, damping: 20, delay: 0.1 }
       }
-      className="relative mx-auto w-full max-w-lg overflow-hidden rounded-3xl border border-black/[0.06] bg-white p-6 shadow-sm sm:p-8"
+      className="relative mx-auto w-full max-w-xl overflow-hidden rounded-3xl border border-pran-orange/20 bg-white p-6 shadow-lg shadow-pran-orange/10 sm:p-8"
     >
       {!lowPerfMode && (
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-3xl">
@@ -460,16 +538,20 @@ export function InteractiveVoiceWidget() {
       )}
 
       <div className="relative z-10">
-        <motion.div layout={!lowPerfMode ? "position" : false} className="mb-4 text-center">
-          <h3 className="mb-1 text-2xl font-bold tracking-tight text-primary">
+        <motion.div layout={!lowPerfMode ? "position" : false} className="mb-6 text-center">
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-pran-orange/25 bg-pran-orange/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-pran-orange">
+            <Zap className="h-3.5 w-3.5" />
+            Live Demo
+          </div>
+          <h2 className="mb-2 text-3xl font-black tracking-tight text-primary sm:text-[2rem]">
             Talk To Your AI Agent In Seconds
-          </h3>
-          <p className="mx-auto max-w-sm text-sm text-secondary">
-            Pick a language, speak naturally, hear the response, and watch real-time cost.
+          </h2>
+          <p className="mx-auto max-w-md text-sm leading-relaxed text-secondary sm:text-[15px]">
+            Pick a language and start talking. Your AI replies instantly in a natural voice.
           </p>
         </motion.div>
 
-        <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="mb-4">
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-secondary">
               Language
@@ -491,170 +573,251 @@ export function InteractiveVoiceWidget() {
               <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-secondary transition group-focus-within:text-pran-orange" />
             </div>
           </div>
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-secondary">
-              AI Agent
-            </label>
-            <div className="group relative">
-              <Bot className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-secondary transition group-focus-within:text-pran-orange" />
-              <select
-                value={agentMode}
-                disabled={!canChangeLanguage}
-                onChange={(event) => setAgentMode(event.target.value as AgentMode)}
-                className="w-full appearance-none rounded-xl border border-black/[0.08] bg-white py-2 pl-9 pr-9 text-sm text-primary shadow-sm outline-none transition focus:border-pran-orange/50 focus:ring-2 focus:ring-pran-orange/15 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {AGENT_MODE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-secondary transition group-focus-within:text-pran-orange" />
-            </div>
-          </div>
         </div>
 
-        <details className="mb-4 rounded-xl border border-black/[0.08] bg-white p-3">
-          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-secondary">
-            Add Business Context (Optional)
-          </summary>
-          <div className="mt-3">
-            <textarea
-              value={customPrompt}
-              disabled={!canChangeLanguage}
-              onChange={(event) => setCustomPrompt(event.target.value)}
-              rows={2}
-              maxLength={1200}
-              placeholder="Add your business context. This is appended to the default agent prompt."
-              className="w-full resize-y rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-sm text-primary outline-none transition focus:border-pran-orange/50"
-            />
-          </div>
-        </details>
-
-        <AnimatePresence mode="wait">
-          {(status === "recording" || status === "playing") && (
-            <motion.div
-              key="waveform"
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.2 }}
-              className="mb-4 flex h-6 items-center justify-center gap-1.5 opacity-80"
+        {!isCallPanelOpen ? (
+          <div className="mb-6 mt-1 flex justify-center">
+            <button
+              id="live-voice-demo-action"
+              type="button"
+              onClick={() => {
+                setIsCallPanelOpen(true);
+                if (status === "idle" || status === "error") {
+                  onPrimaryAction();
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-pran-orange px-6 py-3 text-sm font-bold text-white shadow-md shadow-pran-orange/20 transition-all hover:bg-pran-orange-light"
             >
-              {Array.from({ length: lowPerfMode ? 4 : 7 }).map((_, index) => (
-                <motion.div
-                  key={index}
-                  className="w-1.5 rounded-full bg-pran-orange"
-                  initial={{ height: "20%" }}
-                  animate={
-                    lowPerfMode
-                      ? { height: ["20%", "60%", "20%"] }
-                      : { height: ["20%", `${Math.random() * 80 + 20}%`, "20%"] }
-                  }
-                  transition={{
-                    repeat: Infinity,
-                    duration: lowPerfMode ? 1 : 0.45 + Math.random() * 0.35,
-                    ease: "easeInOut",
-                  }}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.div
-          layout={!lowPerfMode ? "position" : false}
-          className="mb-4 flex items-center justify-between rounded-xl border border-black/[0.08] bg-stone-50 px-4 py-3"
-        >
-          <p className="text-sm font-medium text-primary">{statusLabel}</p>
-          {status === "processing" ? (
-            <Loader2 className="h-4 w-4 animate-spin text-pran-orange" />
-          ) : status === "playing" ? (
-            <Volume2 className="h-4 w-4 text-pran-orange" />
-          ) : (
-            <Sparkles className="h-4 w-4 text-pran-orange" />
-          )}
-        </motion.div>
-
-        <div className="mb-4 rounded-xl border border-black/[0.08] bg-white px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-pran-orange" />
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-secondary">Live Cost Meter</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center rounded-full border border-black/[0.08] bg-stone-50 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setDisplayCurrency("INR")}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
-                    displayCurrency === "INR"
-                      ? "bg-white text-primary shadow-sm"
-                      : "text-secondary"
-                  }`}
-                >
-                  INR
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDisplayCurrency("USD")}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
-                    displayCurrency === "USD"
-                      ? "bg-white text-primary shadow-sm"
-                      : "text-secondary"
-                  }`}
-                >
-                  USD
-                </button>
-              </div>
-              <p className="text-lg font-extrabold text-primary">{formatMoney(sessionCostTotal)}</p>
-            </div>
+              <Mic className="h-4 w-4" />
+              Start Live Call
+            </button>
           </div>
-          <p className="mt-2 text-[11px] text-secondary">Package-estimated pricing updates after each reply.</p>
-        </div>
+        ) : (
+          <>
+            <div className="mb-6 rounded-2xl border border-black/[0.08] bg-stone-50/70 px-6 py-7 sm:px-7 sm:py-8">
+              <div className="relative z-10">
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-base font-semibold text-primary">{activeVoiceName}</p>
+                  <p className="mt-1 text-xs text-secondary">{formattedCallDuration}</p>
 
-        {errorMessage && (
-          <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            {errorMessage}
-          </p>
+                  <div className="mt-6 w-full max-w-[520px]">
+                    <motion.svg
+                      viewBox="0 0 680 220"
+                      className="h-32 w-full"
+                      preserveAspectRatio="none"
+                      animate={
+                        status === "recording" || status === "playing"
+                          ? { scaleY: [0.82, 1.22, 0.9], opacity: [0.5, 1, 0.78] }
+                          : status === "processing"
+                            ? { scaleY: [0.88, 1.08, 0.9], opacity: [0.42, 0.74, 0.42] }
+                            : { scaleY: 0.78, opacity: 0.36 }
+                      }
+                      transition={{
+                        repeat: status === "idle" ? 0 : Infinity,
+                        duration: status === "processing" ? 2 : 1.6,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <defs>
+                        <linearGradient id="voiceWaveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="rgba(234,88,12,0.15)" />
+                          <stop offset="35%" stopColor="rgba(59,130,246,0.72)" />
+                          <stop offset="65%" stopColor="rgba(168,85,247,0.68)" />
+                          <stop offset="100%" stopColor="rgba(234,88,12,0.15)" />
+                        </linearGradient>
+                      </defs>
+                      <motion.g
+                        animate={
+                          status === "recording" || status === "playing"
+                            ? { x: [0, -28, 0], y: [0, -2, 0] }
+                            : status === "processing"
+                              ? { x: [0, -12, 0], y: [0, -1, 0] }
+                              : { x: 0, y: 0 }
+                        }
+                        transition={{
+                          repeat: status === "idle" ? 0 : Infinity,
+                          duration: status === "processing" ? 3.6 : 2.7,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        {Array.from({ length: 7 }).map((_, index) => (
+                          <path
+                            key={index}
+                            d="M-120 110 C -40 10, 40 210, 120 110 C 200 10, 280 210, 360 110 C 440 10, 520 210, 600 110 C 680 10, 760 210, 840 110"
+                            stroke="url(#voiceWaveGradient)"
+                            strokeWidth={index < 2 ? 1.7 : 1.2}
+                            fill="none"
+                            opacity={0.18 + index * 0.09}
+                            transform={`translate(0 ${index * 6 - 22})`}
+                          />
+                        ))}
+                      </motion.g>
+                      <motion.g
+                        animate={
+                          status === "recording" || status === "playing"
+                            ? { x: [0, 20, 0], y: [0, 1.5, 0] }
+                            : status === "processing"
+                              ? { x: [0, 8, 0], y: [0, 1, 0] }
+                              : { x: 0, y: 0 }
+                        }
+                        transition={{
+                          repeat: status === "idle" ? 0 : Infinity,
+                          duration: status === "processing" ? 3.2 : 2.4,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        {Array.from({ length: 5 }).map((_, index) => (
+                          <path
+                            key={`b-${index}`}
+                            d="M-130 112 C -35 30, 60 194, 155 112 C 250 30, 345 194, 440 112 C 535 30, 630 194, 725 112 C 820 30, 915 194, 1010 112"
+                            stroke="url(#voiceWaveGradient)"
+                            strokeWidth={1}
+                            fill="none"
+                            opacity={0.12 + index * 0.06}
+                            transform={`translate(0 ${index * 7 - 16})`}
+                          />
+                        ))}
+                      </motion.g>
+                    </motion.svg>
+                  </div>
+
+                  <motion.button
+                    id="live-voice-demo-action"
+                    type="button"
+                    onClick={onPrimaryAction}
+                    disabled={status === "processing"}
+                    whileTap={status === "processing" ? undefined : { scale: 0.96 }}
+                    className={`mt-5 inline-flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition-all ${
+                      status === "recording"
+                        ? "bg-red-500 hover:bg-red-600 shadow-red-500/30"
+                        : status === "playing"
+                          ? "bg-zinc-800 hover:bg-black shadow-black/25"
+                          : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/30"
+                    } ${status === "processing" ? "cursor-not-allowed opacity-80" : ""}`}
+                  >
+                    {status === "recording" ? (
+                      <Square className="h-4 w-4 fill-current" />
+                    ) : status === "processing" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : status === "playing" ? (
+                      <Volume2 className="h-4 w-4" />
+                    ) : (
+                      <Mic className="h-4 w-4" />
+                    )}
+                  </motion.button>
+
+                  <div className="mt-4 flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[11px] text-primary shadow-sm">
+                    {status === "processing" ? (
+                      <Loader2 className="h-3 w-3 animate-spin text-pran-orange" />
+                    ) : status === "playing" ? (
+                      <Volume2 className="h-3 w-3 text-pran-orange" />
+                    ) : (
+                      <Sparkles className="h-3 w-3 text-pran-orange" />
+                    )}
+                    {statusLabel}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {errorMessage && (
+              <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {errorMessage}
+              </p>
+            )}
+          </>
         )}
 
-        <motion.div layout={!lowPerfMode ? "position" : false} className="flex justify-center">
-          <button
-            type="button"
-            onClick={onPrimaryAction}
-            disabled={status === "processing"}
-            className={`group relative flex items-center justify-center gap-2 overflow-hidden rounded-full px-8 py-4 font-bold tracking-wide text-white transition-all shadow-md ${
-              status === "recording"
-                ? "bg-red-500 hover:bg-red-600 shadow-red-500/20"
-                : status === "playing"
-                  ? "bg-zinc-800 hover:bg-black shadow-black/20"
-                  : "bg-pran-orange hover:bg-pran-orange-light shadow-pran-orange/20"
-            } ${status === "processing" ? "cursor-not-allowed opacity-70" : ""}`}
-          >
-            {status === "recording" ? (
-              <>
-                <Square className="h-4 w-4 fill-current" />
-                Stop Recording
-              </>
-            ) : status === "processing" ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Processing...
-              </>
-            ) : status === "playing" ? (
-              <>
-                <Volume2 className="h-5 w-5" />
-                Stop Playback
-              </>
-            ) : (
-              <>
-                <Mic className="h-4 w-4" />
-                Start Talking Now
-              </>
-            )}
-          </button>
-        </motion.div>
+        <p className="mt-1 text-center text-xs text-secondary">
+          No signup required • Typical first response under 1 second
+        </p>
+
+        <details className="mt-4 rounded-xl border border-black/[0.08] bg-white p-3">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-secondary">
+                Advanced Settings
+              </summary>
+              <div className="mt-3 space-y-3">
+                <div>
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-secondary">
+                    AI Agent
+                  </label>
+                  <div className="group relative">
+                    <Bot className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-secondary transition group-focus-within:text-pran-orange" />
+                    <select
+                      value={agentMode}
+                      disabled={!canChangeLanguage}
+                      onChange={(event) => setAgentMode(event.target.value as AgentMode)}
+                      className="w-full appearance-none rounded-xl border border-black/[0.08] bg-white py-2 pl-9 pr-9 text-sm text-primary shadow-sm outline-none transition focus:border-pran-orange/50 focus:ring-2 focus:ring-pran-orange/15 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {AGENT_MODE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-secondary transition group-focus-within:text-pran-orange" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-secondary">
+                    Business Context (Optional)
+                  </label>
+                  <textarea
+                    value={customPrompt}
+                    disabled={!canChangeLanguage}
+                    onChange={(event) => setCustomPrompt(event.target.value)}
+                    rows={2}
+                    maxLength={1200}
+                    placeholder="Add your business context. This is appended to the default agent prompt."
+                    className="w-full resize-y rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-sm text-primary outline-none transition focus:border-pran-orange/50"
+                  />
+                </div>
+
+                {hasCompletedFirstReply && (
+                  <div className="rounded-xl border border-black/[0.08] bg-white px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4 text-pran-orange" />
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-secondary">
+                          Estimated Product Usage Cost
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center rounded-full border border-black/[0.08] bg-stone-50 p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setDisplayCurrency("INR")}
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                              displayCurrency === "INR"
+                                ? "bg-white text-primary shadow-sm"
+                                : "text-secondary"
+                            }`}
+                          >
+                            INR
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDisplayCurrency("USD")}
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                              displayCurrency === "USD"
+                                ? "bg-white text-primary shadow-sm"
+                                : "text-secondary"
+                            }`}
+                          >
+                            USD
+                          </button>
+                        </div>
+                        <p className="text-lg font-extrabold text-primary">{formatMoney(sessionCostTotal)}</p>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] text-secondary">
+                      Demo estimator only. This shows modeled usage cost if this agent were deployed in your product.
+                    </p>
+                  </div>
+                )}
+              </div>
+        </details>
 
         {lastResponseAudio && status !== "recording" && status !== "processing" && (
           <div className="mt-3 flex justify-center">
@@ -668,22 +831,6 @@ export function InteractiveVoiceWidget() {
           </div>
         )}
 
-        {(transcript || assistantText) && (
-          <div className="mt-5 space-y-2">
-            {transcript && (
-              <div className="rounded-xl border border-black/[0.08] bg-white px-4 py-3">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-secondary">You said</p>
-                <p className="text-sm text-primary">{transcript}</p>
-              </div>
-            )}
-            {assistantText && (
-              <div className="rounded-xl border border-pran-orange/20 bg-pran-orange/5 px-4 py-3">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-pran-orange">PranAI</p>
-                <p className="text-sm text-primary">{assistantText}</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </motion.div>
   );

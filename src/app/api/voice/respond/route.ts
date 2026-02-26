@@ -37,6 +37,8 @@ const DEEPGRAM_MODEL_NOVA_3 = "nova-3";
 const VOICE_FAST_MAX_TOKENS = Number(process.env.VOICE_FAST_MAX_TOKENS ?? "90");
 const VOICE_FAST_TEMPERATURE = Number(process.env.VOICE_FAST_TEMPERATURE ?? "0.4");
 const VOICE_FAST_HISTORY_MESSAGES = Number(process.env.VOICE_FAST_HISTORY_MESSAGES ?? "4");
+const PCM_BYTES_PER_SECOND = 16000 * 2;
+const MIN_INPUT_AUDIO_SECONDS = Number(process.env.VOICE_MIN_INPUT_SECONDS ?? "0.45");
 
 const AGENT_MODE_PROMPTS: Record<VoiceAgentMode, string> = {
   customer_support:
@@ -151,7 +153,7 @@ async function transcribeWithDeepgram(
   const confidence = typeof alt?.confidence === "number" ? alt.confidence : null;
 
   if (!transcript) {
-    throw new Error("Deepgram returned an empty transcript.");
+    throw new Error("NO_SPEECH_DETECTED");
   }
 
   return { transcript, confidence };
@@ -298,9 +300,8 @@ function estimateTurnCostUsd(args: {
     : 0.75;
 
   // 16kHz, mono, 16-bit PCM => 32000 bytes/sec
-  const bytesPerSecond = 16000 * 2;
-  const inputAudioSeconds = args.inputAudioBytes / bytesPerSecond;
-  const outputAudioSeconds = args.outputAudioBytes / bytesPerSecond;
+  const inputAudioSeconds = args.inputAudioBytes / PCM_BYTES_PER_SECOND;
+  const outputAudioSeconds = args.outputAudioBytes / PCM_BYTES_PER_SECOND;
 
   const sttUsd = (inputAudioSeconds / 60) * sttPerMinute;
   const llmUsd =
@@ -357,13 +358,43 @@ export async function POST(req: NextRequest) {
     if (!audioBuffer.length) {
       return NextResponse.json({ error: "Audio payload is empty." }, { status: 400 });
     }
+    const inputAudioSeconds = audioBuffer.length / PCM_BYTES_PER_SECOND;
+    if (inputAudioSeconds < MIN_INPUT_AUDIO_SECONDS) {
+      return NextResponse.json(
+        {
+          error:
+            "We couldn't hear enough speech. Please speak for at least a second and try again.",
+          code: "AUDIO_TOO_SHORT",
+        },
+        { status: 422 },
+      );
+    }
 
-    const { transcript, confidence } = await transcribeWithDeepgram(
-      audioBuffer,
-      language,
-      voiceEntry.stt_lang,
-      deepgramApiKey,
-    );
+    let transcript: string;
+    let confidence: number | null;
+    try {
+      const transcription = await transcribeWithDeepgram(
+        audioBuffer,
+        language,
+        voiceEntry.stt_lang,
+        deepgramApiKey,
+      );
+      transcript = transcription.transcript;
+      confidence = transcription.confidence;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("NO_SPEECH_DETECTED")) {
+        return NextResponse.json(
+          {
+            error:
+              "I couldn't understand that clearly. Try again in a quieter place and speak a little closer to your mic.",
+            code: "NO_SPEECH_DETECTED",
+          },
+          { status: 422 },
+        );
+      }
+      throw error;
+    }
 
     const lowConfidenceThreshold = Number(process.env.STT_LOW_CONFIDENCE_THRESHOLD ?? "0.5");
     const shouldAskRepeat = confidence !== null && confidence < lowConfidenceThreshold;

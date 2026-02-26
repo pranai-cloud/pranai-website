@@ -106,7 +106,26 @@ export function HeroSection() {
               transition={{ ...ANIMATION_VARIANTS.SPRING_TRANSITION, delay: ANIMATION_TIMING.DELAY_MEDIUM + 0.1 }}
               className="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
             >
-              {/* Primary CTA */}
+              <a
+                href="#live-voice-demo"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const demoSection = document.getElementById("live-voice-demo");
+                  const demoAction = document.getElementById("live-voice-demo-action");
+                  if (demoSection) {
+                    demoSection.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                  if (demoAction) {
+                    setTimeout(() => demoAction.focus(), 300);
+                  }
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent("pranai:voice-demo-start"));
+                  }, 320);
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-pran-orange px-8 py-4 text-base font-bold tracking-wide text-white shadow-lg shadow-pran-orange/20 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-pran-orange/30 hover:bg-pran-orange-light"
+              >
+                Experience pran.ai
+              </a>
               <a
                 href="#lead-form"
                 onClick={(e) => {
@@ -114,13 +133,12 @@ export function HeroSection() {
                   const emailInput = document.getElementById("pranai-email");
                   if (emailInput) {
                     emailInput.scrollIntoView({ behavior: "smooth", block: "center" });
-                    // slight delay to let the scroll complete before focusing
                     setTimeout(() => emailInput.focus(), 300);
                   }
                 }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-pran-orange px-8 py-4 text-base font-bold tracking-wide text-white shadow-lg shadow-pran-orange/20 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-pran-orange/30 hover:bg-pran-orange-light"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-black/[0.1] bg-white px-8 py-4 text-base font-semibold tracking-wide text-primary transition-all hover:-translate-y-0.5 hover:border-pran-orange/40 hover:text-pran-orange"
               >
-                Get Started
+                Book a Demo
               </a>
             </motion.div>
           </div>
@@ -129,13 +147,13 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...ANIMATION_VARIANTS.SPRING_TRANSITION, delay: ANIMATION_TIMING.DELAY_LONG }}
-            className="w-full lg:w-[40%] xl:w-[35%] mt-10 lg:mt-0 flex flex-col gap-4"
+            className="w-full lg:w-[44%] xl:w-[40%] mt-10 lg:mt-0 flex flex-col gap-4"
           >
-            <div id="lead-form" className="order-1 lg:order-1">
-              <LeadCaptureForm />
-            </div>
-            <div className="order-2 lg:order-2">
+            <div id="live-voice-demo" className="order-1">
               <InteractiveVoiceWidget />
+            </div>
+            <div id="lead-form" className="order-2">
+              <LeadCaptureForm />
             </div>
           </motion.div>
         </div>
