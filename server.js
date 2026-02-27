@@ -1,3 +1,4 @@
+require("dotenv").config({ path: ".env.local" });
 /* eslint-disable no-console */
 const http = require("http");
 const crypto = require("crypto");
@@ -15,12 +16,12 @@ const CARTESIA_MODEL_ID = process.env.CARTESIA_MODEL_ID || "sonic-multilingual";
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
 const VOICE_CONFIG = {
-  en: { voiceId: "e8e5fffb-252c-436d-b842-8879b84445b6", label: "English", sttLang: "en" },
-  hi: { voiceId: "28ca2041-5dda-42df-8123-f58ea9c3da00", label: "Hindi", sttLang: "hi" },
-  te: { voiceId: "07bc462a-c644-49f1-baf7-82d5599131be", label: "Telugu", sttLang: "te" },
-  kn: { voiceId: "7c6219d2-e8d2-462c-89d8-7ecba7c75d65", label: "Kannada", sttLang: "kn" },
-  mr: { voiceId: "5c32dce6-936a-4892-b131-bafe474afe5f", label: "Marathi", sttLang: "mr" },
-  bn: { voiceId: "2ba861ea-7cdc-43d1-8608-4045b5a41de5", label: "Bengali", sttLang: "bn" },
+  en: { voiceId: "e8e5fffb-252c-436d-b842-8879b84445b6", label: "English", sttLang: "en", gender: "feminine" },
+  hi: { voiceId: "28ca2041-5dda-42df-8123-f58ea9c3da00", label: "Hindi", sttLang: "hi", gender: "feminine" },
+  te: { voiceId: "07bc462a-c644-49f1-baf7-82d5599131be", label: "Telugu", sttLang: "te", gender: "feminine" },
+  kn: { voiceId: "7c6219d2-e8d2-462c-89d8-7ecba7c75d65", label: "Kannada", sttLang: "kn", gender: "feminine" },
+  mr: { voiceId: "5c32dce6-936a-4892-b131-bafe474afe5f", label: "Marathi", sttLang: "mr", gender: "masculine" },
+  bn: { voiceId: "2ba861ea-7cdc-43d1-8608-4045b5a41de5", label: "Bengali", sttLang: "bn", gender: "masculine" },
 };
 
 const AGENT_MODE_PROMPTS = {
@@ -46,9 +47,9 @@ const VOICE_COST_TTS_PER_SEC_USD = Number(process.env.VOICE_COST_TTS_PER_SEC_USD
 const VOICE_COST_ESTIMATE_MULTIPLIER = Number(process.env.VOICE_COST_ESTIMATE_MULTIPLIER || 0.75);
 
 const BASE_SYSTEM_PROMPT =
-  "You are the PranAI Voice Assistant. Be concise and natural for speech, 1-2 short sentences by default.";
+  "You are the PranAI Voice Assistant. Be concise and natural for speech, 1-2 short sentences by default. Never correct user pronunciation/spelling of the brand unless user explicitly asks.";
 const PRODUCT_CONTEXT_PROMPT =
-  "pran.ai helps businesses deploy multilingual AI voice/chat agents for support, lead qualification, receptionist flows, and cart recovery. Explain pricing as package-estimated and focus on ROI and practical integration strategies.";
+  "pran.ai helps businesses deploy multilingual AI voice/chat agents for support, lead qualification, receptionist flows, and cart recovery. Explain pricing as package-estimated and focus on ROI and practical integration strategies. Do not proactively explain brand pronunciation.";
 
 if (!DEEPGRAM_API_KEY || !GROQ_API_KEY || !CARTESIA_API_KEY) {
   console.error("Missing DEEPGRAM_API_KEY, GROQ_API_KEY, or CARTESIA_API_KEY.");
@@ -127,6 +128,47 @@ function sanitizeCustomPrompt(input) {
   return input.trim().slice(0, 600);
 }
 
+function enforceHindiFeminineFirstPerson(text) {
+  let out = text;
+  out = out.replace(/\bमैं\s+कर\s+सकता\s+हूं\b/gi, "मैं कर सकती हूँ");
+  out = out.replace(/\bमैं\s+कर\s+सकता\s+हूँ\b/gi, "मैं कर सकती हूँ");
+  out = out.replace(/\bमैं\s+कर\s+सकता\b/gi, "मैं कर सकती");
+  out = out.replace(/\bmain\s+kar\s+sakta\s+hoon\b/gi, "main kar sakti hoon");
+  out = out.replace(/\bmain\s+kar\s+sakta\s+hun\b/gi, "main kar sakti hoon");
+  out = out.replace(/\bमैं\s+गया\s+था\b/gi, "मैं गई थी");
+  out = out.replace(/\bmain\s+gaya\s+tha\b/gi, "main gayi thi");
+  out = out.replace(/\bमैं\s+समझता\s+हूं\b/gi, "मैं समझती हूँ");
+  out = out.replace(/\bमैं\s+समझता\s+हूँ\b/gi, "मैं समझती हूँ");
+  out = out.replace(/\bmain\s+samajhta\s+hoon\b/gi, "main samajhti hoon");
+  return out;
+}
+
+function shouldEndCallFromUserText(input) {
+  if (!input || typeof input !== "string") return false;
+  const text = input.toLowerCase().trim();
+  if (!text) return false;
+
+  const endCallPatterns = [
+    /\bbye\b/,
+    /\bgoodbye\b/,
+    /\bbye[- ]?bye\b/,
+    /\bhang up\b/,
+    /\blet'?s hang up\b/,
+    /\bend (the )?call\b/,
+    /\bdisconnect\b/,
+    /\bstop (the )?call\b/,
+    /\bcall over\b/,
+    /\bthat'?s all\b/,
+    /\bthank you(?:\s+bye)?\b/,
+    /\bok(?:ay)?\s+bye\b/,
+    /मुझे कॉल (बंद|खत्म) करनी है/,
+    /कॉल (बंद|खत्म) (करो|कर दीजिए)/,
+    /ठीक है\s*बाय/,
+  ];
+
+  return endCallPatterns.some((pattern) => pattern.test(text));
+}
+
 function createDeepgramUrl(languageCode) {
   const stt = VOICE_CONFIG[languageCode] ?? VOICE_CONFIG.en;
   const model = NOVA_2_LANGUAGE_CODES.has(languageCode) ? "nova-2" : "nova-3";
@@ -140,7 +182,6 @@ function createDeepgramUrl(languageCode) {
     smart_format: "true",
     vad_events: "true",
     endpointing: "300",
-    utterance_end_ms: "700",
   });
   return `wss://api.deepgram.com/v1/listen?${params.toString()}`;
 }
@@ -251,6 +292,7 @@ wss.on("connection", (clientWs) => {
     expectDeepgramClose: false,
     deepgramReconnectAttempts: 0,
     deepgramReconnectTimer: null,
+    lastDeepgramErrorMessage: "",
     turnMetricsByContext: new Map(),
   };
 
@@ -274,15 +316,17 @@ wss.on("connection", (clientWs) => {
   function resetCurrentGeneration(reason = "barge_in") {
     session.activeGenerationId += 1;
     session.isAssistantSpeaking = false;
+    const contextToCancel = session.activeContextId;
+    session.activeContextId = null;
     session.conversation = [];
-    if (session.activeContextId) {
-      session.turnMetricsByContext.delete(session.activeContextId);
+    if (contextToCancel) {
+      session.turnMetricsByContext.delete(contextToCancel);
     }
 
-    if (session.cartesiaWs?.readyState === WebSocket.OPEN && session.activeContextId) {
+    if (session.cartesiaWs?.readyState === WebSocket.OPEN && contextToCancel) {
       session.cartesiaWs.send(
         JSON.stringify({
-          context_id: session.activeContextId,
+          context_id: contextToCancel,
           cancel: true,
         }),
       );
@@ -368,7 +412,11 @@ wss.on("connection", (clientWs) => {
       }
 
       if (msg.error) {
-        sendJson(clientWs, { type: "error", error: `Cartesia error: ${String(msg.error)}` });
+        const errorText = String(msg.error);
+        const expectedAfterCancel = /Invalid context ID/i.test(errorText);
+        if (!expectedAfterCancel) {
+          sendJson(clientWs, { type: "error", error: `Cartesia error: ${errorText}` });
+        }
       }
       });
 
@@ -442,7 +490,9 @@ wss.on("connection", (clientWs) => {
 
     const systemPrompt = process.env.VOICE_AGENT_SYSTEM_PROMPT || BASE_SYSTEM_PROMPT;
     const modePrompt = AGENT_MODE_PROMPTS[session.agentMode] || AGENT_MODE_PROMPTS.customer_support;
-    const languageLabel = (VOICE_CONFIG[session.language] || VOICE_CONFIG.en).label;
+    const voiceEntry = VOICE_CONFIG[session.language] || VOICE_CONFIG.en;
+    const languageLabel = voiceEntry.label;
+    const voiceGender = voiceEntry.gender;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -454,6 +504,12 @@ wss.on("connection", (clientWs) => {
       {
         role: "system",
         content: `Selected response language is ${languageLabel}. Keep replies short and speech-friendly.`,
+      },
+      {
+        role: "system",
+        content:
+          `Voice gender presentation is ${voiceGender}. In gendered languages, ALWAYS use first-person forms matching this gender and never switch. ` +
+          "For Hindi/Hinglish feminine voice, always use feminine forms like 'मैं कर सकती हूँ', 'main kar sakti hoon', 'मैं गई थी'. Never use masculine forms like 'कर सकता हूँ' or 'मैं गया था'.",
       },
       ...session.conversation.slice(-Math.max(0, MAX_HISTORY_MESSAGES)),
       { role: "user", content: transcript },
@@ -486,9 +542,11 @@ wss.on("connection", (clientWs) => {
           token.includes("\n");
 
         if (shouldFlush) {
+          const ttsChunk =
+            session.language === "hi" ? enforceHindiFeminineFirstPerson(tokenBuffer) : tokenBuffer;
           await sendTextChunkToCartesia({
             contextId,
-            transcript: tokenBuffer,
+            transcript: ttsChunk,
             continueStream: true,
           });
           wroteAnyChunk = true;
@@ -499,9 +557,10 @@ wss.on("connection", (clientWs) => {
       if (session.closed || generationId !== session.activeGenerationId) return;
 
       if (tokenBuffer.length > 0) {
+        const ttsChunk = session.language === "hi" ? enforceHindiFeminineFirstPerson(tokenBuffer) : tokenBuffer;
         await sendTextChunkToCartesia({
           contextId,
-          transcript: tokenBuffer,
+          transcript: ttsChunk,
           continueStream: true,
         });
         wroteAnyChunk = true;
@@ -546,7 +605,9 @@ wss.on("connection", (clientWs) => {
     }
 
     const deepgramUrl = createDeepgramUrl(session.language);
+    console.log(`[voice] connecting deepgram language=${session.language} url=${deepgramUrl}`);
     session.expectDeepgramClose = false;
+    session.lastDeepgramErrorMessage = "";
     session.deepgramWs = new WebSocket(deepgramUrl, {
       headers: {
         Authorization: `Token ${DEEPGRAM_API_KEY}`,
@@ -554,6 +615,7 @@ wss.on("connection", (clientWs) => {
     });
 
     session.deepgramWs.on("open", () => {
+      console.log(`[voice] deepgram connected language=${session.language}`);
       session.deepgramReconnectAttempts = 0;
       sendJson(clientWs, { type: "stt_ready", language: session.language });
       if (session.deepgramKeepAlive) clearInterval(session.deepgramKeepAlive);
@@ -587,16 +649,41 @@ wss.on("connection", (clientWs) => {
       }
 
       sendJson(clientWs, { type: "transcript_final", transcript });
+      if (shouldEndCallFromUserText(transcript)) {
+        resetCurrentGeneration("user_requested_end");
+        sendJson(clientWs, {
+          type: "session_end_intent",
+          reason: "user_requested_end",
+          transcript,
+        });
+        return;
+      }
       void handleFinalTranscript(transcript, Number(msg.duration || 0));
     });
 
     session.deepgramWs.on("close", () => {
+      console.log(
+        `[voice] deepgram closed expected=${session.expectDeepgramClose} err=${session.lastDeepgramErrorMessage || "none"}`,
+      );
       sendJson(clientWs, { type: "stt_closed" });
       if (session.deepgramKeepAlive) {
         clearInterval(session.deepgramKeepAlive);
         session.deepgramKeepAlive = null;
       }
       if (session.closed || session.expectDeepgramClose) return;
+
+      const nonRetryable =
+        /401|403|400|Unauthorized|Forbidden|Bad Request|model\/language\/tier/i.test(
+          session.lastDeepgramErrorMessage || "",
+        );
+      if (nonRetryable) {
+        sendJson(clientWs, {
+          type: "error",
+          error: `Deepgram connection failed: ${session.lastDeepgramErrorMessage}`,
+        });
+        return;
+      }
+
       if (session.deepgramReconnectAttempts >= MAX_DEEPGRAM_RECONNECT_ATTEMPTS) {
         sendJson(clientWs, { type: "error", error: "STT connection dropped repeatedly. Please restart call." });
         return;
@@ -610,6 +697,8 @@ wss.on("connection", (clientWs) => {
     });
 
     session.deepgramWs.on("error", (error) => {
+      session.lastDeepgramErrorMessage = error.message;
+      console.log(`[voice] deepgram error ${error.message}`);
       sendJson(clientWs, { type: "error", error: `Deepgram WS error: ${error.message}` });
     });
   }

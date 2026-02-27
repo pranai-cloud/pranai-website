@@ -17,9 +17,9 @@ const DEFAULT_SYSTEM_PROMPT =
 const PRANAI_PRODUCT_CONTEXT_PROMPT = `
 Brand pronunciation and identity:
 - Brand name is written as "pran.ai".
-- Pronunciation should be natural and consistent as "pranai" (one smooth word).
-- Never spell the brand letter-by-letter (for example: "P R A N", "A I", or "P R A N dot A I"), unless the user explicitly asks for spelling.
-- Do not mention pronunciation unless the user explicitly asks how to pronounce the brand.
+- Never proactively explain how the brand is pronounced.
+- Never correct the user's pronunciation or spelling unless the user explicitly asks for correction.
+- If user says a variant (for example "PranAI", "pran.ai", or "Pranaya"), continue naturally without mentioning mismatch.
 
 What pran.ai does:
 - pran.ai helps businesses launch AI voice and chat agents for support, lead qualification, receptionist flows, and cart recovery.
@@ -101,35 +101,28 @@ interface VoiceRespondRequestBody {
   customPrompt?: string;
 }
 
-function localizedBrandName(language: VoiceLanguageCode): string {
-  if (language === "hi" || language === "mr") return "प्रनाई";
-  if (language === "bn") return "প্রানাই";
-  return "pranai";
-}
-
-function normalizeBrandPronunciation(text: string, language: VoiceLanguageCode): string {
-  const brand = localizedBrandName(language);
+function stripUnwantedPronunciationCorrections(text: string): string {
   let out = text;
-
-  // Normalize common written variants to one speakable form.
-  out = out.replace(/\bpran\.?ai\b/gi, brand);
-  out = out.replace(/\bpranai\b/gi, brand);
-
-  // Collapse letter-by-letter spellings that sometimes leak from LLM output.
-  out = out.replace(/\bP\s*R\s*A\s*N\s*(?:\.|dot)?\s*A\s*I\b/gi, brand);
-  out = out.replace(/\bP\s*R\s*A\s*N\b/gi, brand);
-  out = out.replace(/\bA\s*I\b/gi, brand);
-
-  // Remove punctuation-separated Devanagari spelling variants seen in logs.
-  out = out.replace(/प्रन\s*[\.\-]?\s*ए\s*[\.\-]?\s*आय/gi, brand);
-
-  // Remove redundant "pronounced X" artifacts when model repeats itself.
-  out = out.replace(/,\s*pronounced\s+pranai/gi, "");
-  out = out.replace(/,\s*called\s+pranai/gi, "");
-  out = out.replace(/\bpranai\s*,\s*pranai\b/gi, "pranai");
   out = out.replace(/\(I assume you meant [^)]+\)/gi, "");
   out = out.replace(/I assume you meant [^.,!?]+[.,!?]?/gi, "");
+  out = out.replace(/(?:you|u)\s+mean(?:t)?\s+pran(?:\.|\s*)?ai[.?!]?/gi, "");
+  out = out.replace(/(?:it'?s|its)\s+pronounced\s+[^.?!]+[.?!]?/gi, "");
+  return out.trim();
+}
 
+function enforceHindiFeminineFirstPerson(text: string, language: VoiceLanguageCode): string {
+  if (language !== "hi") return text;
+  let out = text;
+  out = out.replace(/\bमैं\s+कर\s+सकता\s+हूं\b/gi, "मैं कर सकती हूँ");
+  out = out.replace(/\bमैं\s+कर\s+सकता\s+हूँ\b/gi, "मैं कर सकती हूँ");
+  out = out.replace(/\bमैं\s+कर\s+सकता\b/gi, "मैं कर सकती");
+  out = out.replace(/\bmain\s+kar\s+sakta\s+hoon\b/gi, "main kar sakti hoon");
+  out = out.replace(/\bmain\s+kar\s+sakta\s+hun\b/gi, "main kar sakti hoon");
+  out = out.replace(/\bमैं\s+गया\s+था\b/gi, "मैं गई थी");
+  out = out.replace(/\bmain\s+gaya\s+tha\b/gi, "main gayi thi");
+  out = out.replace(/\bमैं\s+समझता\s+हूं\b/gi, "मैं समझती हूँ");
+  out = out.replace(/\bमैं\s+समझता\s+हूँ\b/gi, "मैं समझती हूँ");
+  out = out.replace(/\bmain\s+samajhta\s+hoon\b/gi, "main samajhti hoon");
   return out;
 }
 
@@ -287,7 +280,8 @@ async function generateWithGroq(
         content:
           `Voice persona name: ${voiceName}. Voice gender presentation: ${voiceGender}. ` +
           "In gendered languages, ALWAYS use first-person grammar that matches this gender and never switch gendered forms. " +
-          "Hindi examples: feminine -> 'मैं समझती हूँ', 'मैं गई थी'; masculine -> 'मैं समझता हूँ', 'मैं गया था'.",
+          "Hindi examples: feminine -> 'मैं समझती हूँ', 'मैं गई थी', 'मैं कर सकती हूँ'; masculine -> 'मैं समझता हूँ', 'मैं गया था', 'मैं कर सकता हूँ'. " +
+          "If language is Hindi/Hinglish and voice is feminine, NEVER use masculine first-person forms.",
       },
       ...history,
       { role: "user", content: transcript },
@@ -509,7 +503,8 @@ export async function POST(req: NextRequest) {
         customPrompt,
         groqApiKey,
       );
-      assistantText = normalizeBrandPronunciation(llmResponse.responseText, language);
+      assistantText = stripUnwantedPronunciationCorrections(llmResponse.responseText);
+      assistantText = enforceHindiFeminineFirstPerson(assistantText, language);
       promptTokens = llmResponse.promptTokens;
       completionTokens = llmResponse.completionTokens;
     }

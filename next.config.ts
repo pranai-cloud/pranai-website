@@ -7,7 +7,7 @@ const cspDirectives = [
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: data:",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://calendly.com https://*.supabase.co https://*.posthog.com",
+  "connect-src 'self' https://calendly.com https://*.supabase.co https://*.posthog.com ws://localhost:8080 wss://*.railway.app",
   "frame-src https://calendly.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",

@@ -203,6 +203,8 @@ export function InteractiveVoiceWidget() {
   const playbackSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const playbackCursorRef = useRef(0);
   const assistantStreamActiveRef = useRef(false);
+  const bargeInInFlightRef = useRef(false);
+  const bargeInCooldownUntilRef = useRef(0);
 
   const audioUnlockedRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -211,13 +213,6 @@ export function InteractiveVoiceWidget() {
   const lowPerfMode = isMobile || prefersReducedMotion;
   const canChangeLanguage = status === "idle" || status === "error";
 
-  const statusLabel = useMemo(() => {
-    if (status === "recording") return "Listening...";
-    if (status === "processing") return "Thinking...";
-    if (status === "playing") return "Speaking...";
-    if (status === "error") return "Something went wrong";
-    return "Ready to talk";
-  }, [status]);
   const hasCompletedFirstReply = Boolean(assistantText.trim());
   const activeVoiceName = useMemo(
     () =>
@@ -371,7 +366,11 @@ export function InteractiveVoiceWidget() {
     playbackSourcesRef.current.add(source);
     source.onended = () => {
       playbackSourcesRef.current.delete(source);
-      if (!assistantStreamActiveRef.current && playbackSourcesRef.current.size === 0 && isSessionActive) {
+      if (
+        !assistantStreamActiveRef.current &&
+        playbackSourcesRef.current.size === 0 &&
+        sessionActiveRef.current
+      ) {
         setStatus("recording");
       }
     };
@@ -398,16 +397,30 @@ export function InteractiveVoiceWidget() {
 
     switch (payload.type) {
       case "transcript_interim":
+        if (typeof payload.transcript === "string") setTranscript(payload.transcript);
+        if (sessionActiveRef.current && !assistantStreamActiveRef.current) {
+          setStatus("recording");
+        }
+        break;
       case "transcript_final":
         if (typeof payload.transcript === "string") setTranscript(payload.transcript);
+        if (sessionActiveRef.current) {
+          // User turn ended; model/TTS pipeline starts now.
+          setStatus("processing");
+        }
         break;
       case "assistant_response_start":
         assistantStreamActiveRef.current = true;
+        bargeInInFlightRef.current = false;
         setAssistantText("");
+        if (sessionActiveRef.current) setStatus("processing");
         break;
       case "assistant_text_delta":
         if (typeof payload.delta === "string") {
           setAssistantText((prev) => prev + payload.delta);
+        }
+        if (sessionActiveRef.current && playbackSourcesRef.current.size === 0) {
+          setStatus("processing");
         }
         break;
       case "assistant_audio_chunk":
@@ -417,6 +430,7 @@ export function InteractiveVoiceWidget() {
         break;
       case "assistant_audio_done":
         assistantStreamActiveRef.current = false;
+        bargeInInFlightRef.current = false;
         window.setTimeout(() => {
           if (playbackSourcesRef.current.size === 0 && sessionActiveRef.current) {
             setStatus("recording");
@@ -426,11 +440,19 @@ export function InteractiveVoiceWidget() {
       case "assistant_audio_clear":
       case "assistant_interrupted":
         assistantStreamActiveRef.current = false;
+        bargeInInFlightRef.current = false;
         clearAssistantPlaybackQueue();
         if (sessionActiveRef.current) setStatus("recording");
         break;
       case "speech_started":
-        if (assistantStreamActiveRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
+        if (
+          assistantStreamActiveRef.current &&
+          wsRef.current?.readyState === WebSocket.OPEN &&
+          !bargeInInFlightRef.current &&
+          Date.now() >= bargeInCooldownUntilRef.current
+        ) {
+          bargeInInFlightRef.current = true;
+          bargeInCooldownUntilRef.current = Date.now() + 350;
           wsRef.current.send(JSON.stringify({ type: "barge_in" }));
         }
         break;
@@ -444,11 +466,26 @@ export function InteractiveVoiceWidget() {
           `Voice connection recovering (attempt ${payload.attempt ?? 1})...`,
         );
         break;
+      case "stt_ready":
+        if (sessionActiveRef.current) {
+          setStatus("recording");
+          setErrorMessage("");
+        }
+        break;
+      case "stt_closed":
+        if (sessionActiveRef.current) {
+          setStatus("processing");
+        }
+        break;
       case "metrics_turn":
         if (payload.estimatedCost && typeof payload.estimatedCost.totalUsd === "number") {
           const turnCostUsd = payload.estimatedCost.totalUsd;
           setSessionCostTotal((prev) => Number((prev + turnCostUsd).toFixed(6)));
         }
+        break;
+      case "session_end_intent":
+        setAssistantText("Sure — ending the call now. Talk soon!");
+        stopStreamingSession();
         break;
       default:
         break;
@@ -550,7 +587,12 @@ export function InteractiveVoiceWidget() {
 
       await unlockBrowserAudio();
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
       mediaStreamRef.current = stream;
       wsManualCloseRef.current = false;
@@ -857,7 +899,7 @@ export function InteractiveVoiceWidget() {
                     )}
                   </motion.button>
 
-                  <div className="mt-2 flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[10px] text-primary shadow-sm">
+                  <div className="mt-2 flex items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 shadow-sm">
                     {status === "processing" ? (
                       <Loader2 className="h-2.5 w-2.5 animate-spin text-pran-orange" />
                     ) : status === "playing" ? (
@@ -865,7 +907,9 @@ export function InteractiveVoiceWidget() {
                     ) : (
                       <Sparkles className="h-2.5 w-2.5 text-pran-orange" />
                     )}
-                    {statusLabel}
+                    <span className="h-1.5 w-1.5 rounded-full bg-pran-orange/80" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-pran-orange/60" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-pran-orange/40" />
                   </div>
                 </div>
               </div>
