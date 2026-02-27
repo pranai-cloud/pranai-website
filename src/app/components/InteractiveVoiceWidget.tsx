@@ -10,8 +10,6 @@ import {
 } from "@/lib/voice/config";
 
 type WidgetState = "idle" | "recording" | "processing" | "playing" | "error";
-type ConversationMessage = { role: "user" | "assistant"; content: string };
-type ResponseAudioPayload = { audioBase64: string; audioMimeType: string };
 type AgentMode =
   | "customer_support"
   | "lead_qualification"
@@ -19,6 +17,8 @@ type AgentMode =
   | "cart_recovery";
 type DisplayCurrency = "INR" | "USD";
 const MAX_DEMO_CALL_SECONDS = 120;
+const VOICE_PROTOCOL_VERSION = "1";
+const MAX_WS_RECONNECT_ATTEMPTS = 5;
 
 const AGENT_MODE_OPTIONS: Array<{ value: AgentMode; label: string }> = [
   { value: "customer_support", label: "Customer Support" },
@@ -144,6 +144,14 @@ function isAutoplayBlockedError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "NotAllowedError";
 }
 
+function safeJsonParse(input: string): unknown {
+  try {
+    return JSON.parse(input);
+  } catch {
+    return null;
+  }
+}
+
 async function convertBlobToPcmBase64(blob: Blob): Promise<string> {
   const arrayBuffer = await blob.arrayBuffer();
   const audioContext = new AudioContext();
@@ -175,19 +183,27 @@ export function InteractiveVoiceWidget() {
   const [assistantText, setAssistantText] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isMobile, setIsMobile] = useState(false);
-  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
-  const [lastResponseAudio, setLastResponseAudio] = useState<ResponseAudioPayload | null>(null);
+  const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionCostTotal, setSessionCostTotal] = useState(0);
   const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("INR");
   const [agentMode, setAgentMode] = useState<AgentMode>("customer_support");
   const [customPrompt, setCustomPrompt] = useState("");
-  const [needsAudioEnable, setNeedsAudioEnable] = useState(false);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsReconnectAttemptsRef = useRef(0);
+  const wsReconnectTimerRef = useRef<number | null>(null);
+  const wsManualCloseRef = useRef(false);
+  const sessionActiveRef = useRef(false);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
-  const activeAudioUrlRef = useRef<string | null>(null);
+  const micAudioContextRef = useRef<AudioContext | null>(null);
+  const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const micProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const micSilencerRef = useRef<GainNode | null>(null);
+
+  const playbackSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const playbackCursorRef = useRef(0);
+  const assistantStreamActiveRef = useRef(false);
+
   const audioUnlockedRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -202,7 +218,7 @@ export function InteractiveVoiceWidget() {
     if (status === "error") return "Something went wrong";
     return "Ready to talk";
   }, [status]);
-  const hasCompletedFirstReply = Boolean(lastResponseAudio || assistantText);
+  const hasCompletedFirstReply = Boolean(assistantText.trim());
   const activeVoiceName = useMemo(
     () =>
       availableLanguages.find((item) => item.code === selectedLanguage)?.voiceName ?? "Voice Agent",
@@ -265,27 +281,39 @@ export function InteractiveVoiceWidget() {
   }, [status]);
 
   useEffect(() => {
+    sessionActiveRef.current = isSessionActive;
+  }, [isSessionActive]);
+
+  useEffect(() => {
     return () => {
+      wsManualCloseRef.current = true;
+      if (wsReconnectTimerRef.current) {
+        window.clearTimeout(wsReconnectTimerRef.current);
+        wsReconnectTimerRef.current = null;
+      }
+      wsRef.current?.close();
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
-      if (activeAudioRef.current) {
-        activeAudioRef.current.pause();
-      }
-      if (activeAudioUrlRef.current) {
-        URL.revokeObjectURL(activeAudioUrlRef.current);
-      }
+      playbackSourcesRef.current.forEach((source) => source.stop());
+      playbackSourcesRef.current.clear();
+      micProcessorRef.current?.disconnect();
+      micSourceRef.current?.disconnect();
+      micSilencerRef.current?.disconnect();
+      void micAudioContextRef.current?.close();
+      void audioContextRef.current?.close();
     };
   }, []);
 
-  const stopPlayback = () => {
-    if (activeAudioRef.current) {
-      activeAudioRef.current.pause();
-      activeAudioRef.current.currentTime = 0;
-    }
-    if (activeAudioUrlRef.current) {
-      URL.revokeObjectURL(activeAudioUrlRef.current);
-      activeAudioUrlRef.current = null;
-    }
-    setStatus("idle");
+  const clearAssistantPlaybackQueue = () => {
+    playbackSourcesRef.current.forEach((source) => {
+      try {
+        source.stop();
+      } catch {
+        // noop
+      }
+    });
+    playbackSourcesRef.current.clear();
+    const currentTime = audioContextRef.current?.currentTime ?? 0;
+    playbackCursorRef.current = currentTime + 0.02;
   };
 
   const unlockBrowserAudio = async () => {
@@ -316,173 +344,197 @@ export function InteractiveVoiceWidget() {
     }
   };
 
-  const playAssistantAudio = async (audioBase64: string, audioMimeType?: string) => {
-    const audioBlob = createPlayableAudioBlob(audioBase64, audioMimeType);
-    const audioUrl = URL.createObjectURL(audioBlob);
+  const queueAssistantAudioChunk = async (audioBase64: string) => {
+    await unlockBrowserAudio();
+    if (!audioContextRef.current) return;
 
-    if (activeAudioUrlRef.current) {
-      URL.revokeObjectURL(activeAudioUrlRef.current);
+    const pcmBytes = base64ToBytes(audioBase64);
+    if (!pcmBytes.length) return;
+
+    const pcm16 = new Int16Array(
+      pcmBytes.buffer,
+      pcmBytes.byteOffset,
+      Math.floor(pcmBytes.byteLength / Int16Array.BYTES_PER_ELEMENT),
+    );
+    const floatData = new Float32Array(pcm16.length);
+    for (let i = 0; i < pcm16.length; i += 1) {
+      floatData[i] = pcm16[i] / 0x8000;
     }
-    activeAudioUrlRef.current = audioUrl;
 
-    const audio = new Audio(audioUrl);
-    audio.preload = "auto";
-    audio.setAttribute("playsinline", "true");
-    activeAudioRef.current = audio;
+    const ctx = audioContextRef.current;
+    const audioBuffer = ctx.createBuffer(1, floatData.length, 16000);
+    audioBuffer.copyToChannel(floatData, 0);
+
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    playbackSourcesRef.current.add(source);
+    source.onended = () => {
+      playbackSourcesRef.current.delete(source);
+      if (!assistantStreamActiveRef.current && playbackSourcesRef.current.size === 0 && isSessionActive) {
+        setStatus("recording");
+      }
+    };
+
+    const startAt = Math.max(ctx.currentTime + 0.01, playbackCursorRef.current);
+    source.start(startAt);
+    playbackCursorRef.current = startAt + audioBuffer.duration;
     setStatus("playing");
-
-    await new Promise<void>((resolve, reject) => {
-      audio.onended = () => resolve();
-      audio.onerror = () => reject(new Error("Failed to play assistant audio."));
-      audio.play().catch(reject);
-    });
   };
 
-  const sendRecordedAudio = async (audioBlob: Blob) => {
-    const audioBase64 = await convertBlobToPcmBase64(audioBlob);
-    const response = await fetch("/api/voice/respond", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        language: selectedLanguage,
-        agentMode,
-        customPrompt,
-        audioBase64,
-        conversation,
-      }),
-    });
+  const handleServerMessage = async (event: MessageEvent<string>) => {
+    const parsed = safeJsonParse(event.data);
+    if (!parsed || typeof parsed !== "object") return;
+    const payload = parsed as {
+      type: string;
+      transcript?: string;
+      delta?: string;
+      audioBase64?: string;
+      error?: string;
+      estimatedCost?: { totalUsd?: number };
+      attempt?: number;
+      delayMs?: number;
+    };
 
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload?.details || payload?.error || "Voice request failed.");
-    }
-
-    const nextTranscript = String(payload.transcript ?? "");
-    const nextAssistant = String(payload.assistantText ?? "");
-    setTranscript(nextTranscript);
-    setAssistantText(nextAssistant);
-    setConversation((prev) => [
-      ...prev.slice(-4),
-      { role: "user", content: nextTranscript },
-      { role: "assistant", content: nextAssistant },
-    ]);
-
-    const responseAudio = String(payload.audioBase64 ?? "");
-    const responseAudioMime = String(payload.audioMimeType ?? "audio/raw;encoding=pcm_s16le;rate=16000");
-    const estimatedCost = payload.estimatedCost as { totalUsd?: number } | undefined;
-    if (estimatedCost && typeof estimatedCost.totalUsd === "number") {
-      const turnCostUsd = estimatedCost.totalUsd;
-      setSessionCostTotal((prev) => Number((prev + turnCostUsd).toFixed(6)));
-    }
-    if (responseAudio) {
-      setLastResponseAudio({ audioBase64: responseAudio, audioMimeType: responseAudioMime });
-      try {
-        await playAssistantAudio(responseAudio, responseAudioMime);
-        setNeedsAudioEnable(false);
-        setErrorMessage("");
-      } catch (error) {
-        if (isAutoplayBlockedError(error)) {
-          try {
-            await unlockBrowserAudio();
-            await playAssistantAudio(responseAudio, responseAudioMime);
-            setNeedsAudioEnable(false);
-            setErrorMessage("");
-          } catch (retryError) {
-            setNeedsAudioEnable(isAutoplayBlockedError(retryError));
-            setErrorMessage(
-              isAutoplayBlockedError(retryError)
-                ? "Playback was blocked by your browser. Tap 'Play response audio' below."
-                : retryError instanceof Error
-                  ? retryError.message
-                  : "Failed to play assistant audio.",
-            );
+    switch (payload.type) {
+      case "transcript_interim":
+      case "transcript_final":
+        if (typeof payload.transcript === "string") setTranscript(payload.transcript);
+        break;
+      case "assistant_response_start":
+        assistantStreamActiveRef.current = true;
+        setAssistantText("");
+        break;
+      case "assistant_text_delta":
+        if (typeof payload.delta === "string") {
+          setAssistantText((prev) => prev + payload.delta);
+        }
+        break;
+      case "assistant_audio_chunk":
+        if (typeof payload.audioBase64 === "string") {
+          await queueAssistantAudioChunk(payload.audioBase64);
+        }
+        break;
+      case "assistant_audio_done":
+        assistantStreamActiveRef.current = false;
+        window.setTimeout(() => {
+          if (playbackSourcesRef.current.size === 0 && sessionActiveRef.current) {
+            setStatus("recording");
           }
-        } else {
-          setNeedsAudioEnable(false);
-          setErrorMessage(
-            error instanceof Error ? error.message : "Failed to play assistant audio.",
-          );
+        }, 80);
+        break;
+      case "assistant_audio_clear":
+      case "assistant_interrupted":
+        assistantStreamActiveRef.current = false;
+        clearAssistantPlaybackQueue();
+        if (sessionActiveRef.current) setStatus("recording");
+        break;
+      case "speech_started":
+        if (assistantStreamActiveRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: "barge_in" }));
         }
-      }
-    }
-    setStatus("idle");
-  };
-
-  const replayLastAudio = () => {
-    if (!lastResponseAudio) return;
-    setErrorMessage("");
-    void (async () => {
-      try {
-        await playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType);
-        setNeedsAudioEnable(false);
-      } catch (error) {
-        if (!isAutoplayBlockedError(error)) {
-          setNeedsAudioEnable(false);
-          setErrorMessage(error instanceof Error ? error.message : "Failed to play assistant audio.");
-          return;
-        }
-        // Auto-run the same recovery path instead of waiting for another tap.
-        try {
-          await unlockBrowserAudio();
-          await playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType);
-          setNeedsAudioEnable(false);
-          setErrorMessage("");
-        } catch (retryError) {
-          setNeedsAudioEnable(isAutoplayBlockedError(retryError));
-          setErrorMessage(
-            isAutoplayBlockedError(retryError)
-              ? "Playback is still blocked by your browser. Tap 'Enable audio & replay' below."
-              : retryError instanceof Error
-                ? retryError.message
-                : "Failed to play assistant audio.",
-          );
-        }
-      } finally {
-        setStatus("idle");
-      }
-    })();
-  };
-
-  const enableAudioAndReplay = () => {
-    if (!lastResponseAudio) return;
-    setErrorMessage("");
-    void unlockBrowserAudio()
-      .then(() => playAssistantAudio(lastResponseAudio.audioBase64, lastResponseAudio.audioMimeType))
-      .then(() => {
-        setNeedsAudioEnable(false);
-      })
-      .catch((error) => {
-        setNeedsAudioEnable(isAutoplayBlockedError(error));
+        break;
+      case "error":
+        setErrorMessage(payload.error || "Realtime voice server error.");
+        setStatus("error");
+        break;
+      case "stt_reconnecting":
+        setStatus("processing");
         setErrorMessage(
-          isAutoplayBlockedError(error)
-            ? "Playback is still blocked by your browser. Tap once on the page, then try again."
-            : error instanceof Error
-              ? error.message
-              : "Failed to play assistant audio.",
+          `Voice connection recovering (attempt ${payload.attempt ?? 1})...`,
         );
-      })
-      .finally(() => setStatus("idle"));
-  };
-
-  const finalizeRecording = async () => {
-    try {
-      const blobType = mediaRecorderRef.current?.mimeType || "audio/webm";
-      const audioBlob = new Blob(recordedChunksRef.current, { type: blobType });
-      recordedChunksRef.current = [];
-
-      if (!audioBlob.size) {
-        throw new Error("No audio captured. Please try again.");
-      }
-      await sendRecordedAudio(audioBlob);
-    } catch (error) {
-      setStatus("error");
-      setErrorMessage(error instanceof Error ? error.message : "Unable to process audio.");
-    } finally {
-      mediaRecorderRef.current = null;
+        break;
+      case "metrics_turn":
+        if (payload.estimatedCost && typeof payload.estimatedCost.totalUsd === "number") {
+          const turnCostUsd = payload.estimatedCost.totalUsd;
+          setSessionCostTotal((prev) => Number((prev + turnCostUsd).toFixed(6)));
+        }
+        break;
+      default:
+        break;
     }
   };
 
-  const startRecording = async () => {
+  const getRealtimeWsUrl = () =>
+    process.env.NEXT_PUBLIC_VOICE_WS_URL ||
+    `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:8080/ws`;
+
+  const connectRealtimeSocket = (config: {
+    language: VoiceLanguageCode;
+    agentMode: AgentMode;
+    customPrompt: string;
+  }) => {
+    const ws = new WebSocket(getRealtimeWsUrl());
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      wsReconnectAttemptsRef.current = 0;
+      setErrorMessage("");
+      ws.send(
+        JSON.stringify({
+          type: "init",
+          protocolVersion: VOICE_PROTOCOL_VERSION,
+          language: config.language,
+          agentMode: config.agentMode,
+          customPrompt: config.customPrompt,
+        }),
+      );
+    };
+    ws.onmessage = (event) => {
+      void handleServerMessage(event as MessageEvent<string>);
+    };
+    ws.onerror = () => {
+      // onclose drives reconnect.
+    };
+    ws.onclose = () => {
+      if (wsManualCloseRef.current || !sessionActiveRef.current) return;
+      if (wsReconnectAttemptsRef.current >= MAX_WS_RECONNECT_ATTEMPTS) {
+        setErrorMessage("Realtime connection failed repeatedly. End call and retry.");
+        setStatus("error");
+        return;
+      }
+      const attempt = ++wsReconnectAttemptsRef.current;
+      const delayMs = Math.min(500 * 2 ** (attempt - 1), 4000);
+      setStatus("processing");
+      setErrorMessage(`Reconnecting voice stream... (${attempt}/${MAX_WS_RECONNECT_ATTEMPTS})`);
+      wsReconnectTimerRef.current = window.setTimeout(() => {
+        connectRealtimeSocket(config);
+      }, delayMs);
+    };
+  };
+
+  const streamMicToWebSocket = async (stream: MediaStream) => {
+    const context = new AudioContext();
+    micAudioContextRef.current = context;
+
+    if (context.state !== "running") {
+      await context.resume();
+    }
+
+    const source = context.createMediaStreamSource(stream);
+    const processor = context.createScriptProcessor(4096, 1, 1);
+    const silencer = context.createGain();
+    silencer.gain.value = 0;
+
+    micSourceRef.current = source;
+    micProcessorRef.current = processor;
+    micSilencerRef.current = silencer;
+
+    processor.onaudioprocess = (event) => {
+      if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+      const mono = event.inputBuffer.getChannelData(0);
+      const downsampled = downsampleTo16k(mono, context.sampleRate);
+      const pcm = floatToInt16PCM(downsampled);
+      const base64 = bytesToBase64(new Uint8Array(pcm.buffer));
+      wsRef.current.send(JSON.stringify({ type: "audio_chunk", audioBase64: base64 }));
+    };
+
+    source.connect(processor);
+    processor.connect(silencer);
+    silencer.connect(context.destination);
+  };
+
+  const startStreamingSession = async () => {
     if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setStatus("error");
       setErrorMessage("This browser does not support microphone capture.");
@@ -494,35 +546,23 @@ export function InteractiveVoiceWidget() {
       setCallElapsedSeconds(0);
       setTranscript("");
       setAssistantText("");
+      assistantStreamActiveRef.current = false;
 
+      await unlockBrowserAudio();
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
       });
-
       mediaStreamRef.current = stream;
-      const mimeCandidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
-      const supportedMimeType = mimeCandidates.find((mime) =>
-        typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(mime),
-      );
-      const recorder = supportedMimeType
-        ? new MediaRecorder(stream, { mimeType: supportedMimeType })
-        : new MediaRecorder(stream);
+      wsManualCloseRef.current = false;
+      wsReconnectAttemptsRef.current = 0;
+      connectRealtimeSocket({
+        language: selectedLanguage,
+        agentMode,
+        customPrompt,
+      });
 
-      mediaRecorderRef.current = recorder;
-      recordedChunksRef.current = [];
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
-        void finalizeRecording();
-      };
-
-      recorder.start(200);
+      await streamMicToWebSocket(stream);
+      setIsSessionActive(true);
       setStatus("recording");
     } catch (error) {
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -535,32 +575,57 @@ export function InteractiveVoiceWidget() {
     }
   };
 
-  const stopRecording = () => {
-    const recorder = mediaRecorderRef.current;
-    if (!recorder || recorder.state === "inactive") {
-      return;
+  const stopStreamingSession = () => {
+    wsManualCloseRef.current = true;
+    if (wsReconnectTimerRef.current) {
+      window.clearTimeout(wsReconnectTimerRef.current);
+      wsReconnectTimerRef.current = null;
     }
-    // This click is a strong user gesture; prime audio here so reply playback is less likely to be blocked.
-    void unlockBrowserAudio();
-    setStatus("processing");
-    recorder.stop();
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "audio_finalize" }));
+      wsRef.current.close();
+    }
+    wsRef.current = null;
+
+    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+    mediaStreamRef.current = null;
+
+    micProcessorRef.current?.disconnect();
+    micSourceRef.current?.disconnect();
+    micSilencerRef.current?.disconnect();
+    micProcessorRef.current = null;
+    micSourceRef.current = null;
+    micSilencerRef.current = null;
+    void micAudioContextRef.current?.close();
+    micAudioContextRef.current = null;
+
+    clearAssistantPlaybackQueue();
+    assistantStreamActiveRef.current = false;
+    setIsSessionActive(false);
+    setStatus("idle");
   };
 
   const onPrimaryAction = () => {
-    if (status === "recording") {
-      stopRecording();
-      return;
-    }
-    if (status === "playing") {
-      stopPlayback();
+    if (isSessionActive) {
+      stopStreamingSession();
       return;
     }
     if (status === "idle" || status === "error") {
-      // Run unlock in parallel with mic prompt to avoid startup delay.
-      void unlockBrowserAudio();
-      void startRecording();
+      void startStreamingSession();
     }
   };
+
+  useEffect(() => {
+    if (!isSessionActive || wsRef.current?.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(
+      JSON.stringify({
+        type: "config",
+        language: selectedLanguage,
+        agentMode,
+        customPrompt,
+      }),
+    );
+  }, [selectedLanguage, agentMode, customPrompt, isSessionActive]);
 
   useEffect(() => {
     const onStartDemo = () => {
@@ -576,7 +641,7 @@ export function InteractiveVoiceWidget() {
   useEffect(() => {
     if (status === "recording" && callElapsedSeconds >= MAX_DEMO_CALL_SECONDS) {
       setErrorMessage("Demo calls are limited to 2 minutes. We stopped recording automatically.");
-      stopRecording();
+      stopStreamingSession();
     }
   }, [callElapsedSeconds, status]);
 
@@ -904,30 +969,6 @@ export function InteractiveVoiceWidget() {
                 )}
               </div>
         </details>
-
-        {lastResponseAudio && status !== "recording" && status !== "processing" && (
-          <div className="mt-3 flex justify-center">
-            <button
-              type="button"
-              onClick={replayLastAudio}
-              className="rounded-full border border-black/[0.1] bg-white px-4 py-2 text-xs font-semibold text-primary transition hover:bg-stone-50"
-            >
-              Play response audio
-            </button>
-          </div>
-        )}
-
-        {needsAudioEnable && lastResponseAudio && status !== "recording" && status !== "processing" && (
-          <div className="mt-2 flex justify-center">
-            <button
-              type="button"
-              onClick={enableAudioAndReplay}
-              className="rounded-full border border-pran-orange/30 bg-pran-orange/10 px-4 py-2 text-xs font-semibold text-pran-orange transition hover:bg-pran-orange/15"
-            >
-              Enable audio & replay
-            </button>
-          </div>
-        )}
 
       </div>
     </motion.div>
