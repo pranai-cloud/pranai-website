@@ -12,7 +12,7 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const CARTESIA_API_KEY = process.env.CARTESIA_API_KEY;
 
 const CARTESIA_VERSION = process.env.CARTESIA_VERSION || "2025-04-16";
-const CARTESIA_MODEL_ID = process.env.CARTESIA_MODEL_ID || "sonic-multilingual";
+const CARTESIA_MODEL_ID = process.env.CARTESIA_MODEL_ID || "sonic-3";
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
 const VOICE_CONFIG = {
@@ -313,6 +313,7 @@ wss.on("connection", (clientWs) => {
     deepgramReconnectAttempts: 0,
     deepgramReconnectTimer: null,
     lastDeepgramErrorMessage: "",
+    lastAudioForwardedAt: 0,
     turnMetricsByContext: new Map(),
   };
 
@@ -435,6 +436,11 @@ wss.on("connection", (clientWs) => {
         const errorText = String(msg.error);
         const expectedAfterCancel = /Invalid context ID/i.test(errorText);
         if (!expectedAfterCancel) {
+          sendJson(clientWs, {
+            type: "protocol_warning",
+            message:
+              `Cartesia rejected request (model=${CARTESIA_MODEL_ID}, language=${session.language}): ${errorText}`,
+          });
           sendJson(clientWs, { type: "error", error: `Cartesia error: ${errorText}` });
         }
       }
@@ -695,13 +701,22 @@ wss.on("connection", (clientWs) => {
     session.deepgramWs.on("open", () => {
       console.log(`[voice] deepgram connected language=${session.language}`);
       session.deepgramReconnectAttempts = 0;
+      session.lastAudioForwardedAt = Date.now();
       sendJson(clientWs, { type: "stt_ready", language: session.language });
       if (session.deepgramKeepAlive) clearInterval(session.deepgramKeepAlive);
+      // Send an immediate keepalive to avoid fast idle disconnects.
+      if (session.deepgramWs?.readyState === WebSocket.OPEN) {
+        session.deepgramWs.send(JSON.stringify({ type: "KeepAlive" }));
+      }
       session.deepgramKeepAlive = setInterval(() => {
         if (session.deepgramWs?.readyState === WebSocket.OPEN) {
-          session.deepgramWs.send(JSON.stringify({ type: "KeepAlive" }));
+          const idleForMs = Date.now() - session.lastAudioForwardedAt;
+          // Keepalive aggressively when idle; less frequently while audio is flowing.
+          if (idleForMs >= 500) {
+            session.deepgramWs.send(JSON.stringify({ type: "KeepAlive" }));
+          }
         }
-      }, 5000);
+      }, 1000);
     });
 
     session.deepgramWs.on("message", (raw) => {
@@ -739,9 +754,10 @@ wss.on("connection", (clientWs) => {
       void handleFinalTranscript(transcript, Number(msg.duration || 0));
     });
 
-    session.deepgramWs.on("close", () => {
+    session.deepgramWs.on("close", (code, reasonBuffer) => {
+      const reason = reasonBuffer?.toString?.() || "";
       console.log(
-        `[voice] deepgram closed expected=${session.expectDeepgramClose} err=${session.lastDeepgramErrorMessage || "none"}`,
+        `[voice] deepgram closed expected=${session.expectDeepgramClose} code=${code} reason=${reason || "none"} err=${session.lastDeepgramErrorMessage || "none"}`,
       );
       sendJson(clientWs, { type: "stt_closed" });
       if (session.deepgramKeepAlive) {
@@ -843,6 +859,7 @@ wss.on("connection", (clientWs) => {
 
     if (msg.type === "audio_chunk" && typeof msg.audioBase64 === "string") {
       if (session.deepgramWs?.readyState === WebSocket.OPEN) {
+        session.lastAudioForwardedAt = Date.now();
         session.deepgramWs.send(Buffer.from(msg.audioBase64, "base64"));
       }
       return;
