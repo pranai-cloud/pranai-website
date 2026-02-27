@@ -36,9 +36,9 @@ const AGENT_MODE_PROMPTS = {
 };
 
 const NOVA_2_LANGUAGE_CODES = new Set(["en", "hi"]);
-const MAX_HISTORY_MESSAGES = Number(process.env.VOICE_FAST_HISTORY_MESSAGES || 4);
-const GROQ_MAX_TOKENS = Number(process.env.VOICE_FAST_MAX_TOKENS || 90);
-const GROQ_TEMPERATURE = Number(process.env.VOICE_FAST_TEMPERATURE || 0.4);
+const MAX_HISTORY_MESSAGES = Number(process.env.VOICE_FAST_HISTORY_MESSAGES || 2);
+const GROQ_MAX_TOKENS = Number(process.env.VOICE_FAST_MAX_TOKENS || 72);
+const GROQ_TEMPERATURE = Number(process.env.VOICE_FAST_TEMPERATURE || 0.25);
 const MAX_DEEPGRAM_RECONNECT_ATTEMPTS = Number(process.env.DEEPGRAM_RECONNECT_ATTEMPTS || 6);
 const VOICE_COST_STT_PER_MIN_USD = Number(process.env.VOICE_COST_STT_PER_MIN_USD || 0.0043);
 const VOICE_COST_LLM_PROMPT_PER_1K_USD = Number(process.env.VOICE_COST_LLM_PROMPT_PER_1K_USD || 0.0006);
@@ -47,9 +47,17 @@ const VOICE_COST_TTS_PER_SEC_USD = Number(process.env.VOICE_COST_TTS_PER_SEC_USD
 const VOICE_COST_ESTIMATE_MULTIPLIER = Number(process.env.VOICE_COST_ESTIMATE_MULTIPLIER || 0.75);
 
 const BASE_SYSTEM_PROMPT =
-  "You are the PranAI Voice Assistant. Be concise and natural for speech, 1-2 short sentences by default. Never correct user pronunciation/spelling of the brand unless user explicitly asks.";
+  "You are the PranAI Voice Assistant. Reply in 1 short sentence by default, max 2 unless user asks for detail. Never correct user pronunciation/spelling of the brand unless user explicitly asks. Do not repeat generic openers like 'How can I help you today?' on every turn.";
 const PRODUCT_CONTEXT_PROMPT =
-  "pran.ai helps businesses deploy multilingual AI voice/chat agents for support, lead qualification, receptionist flows, and cart recovery. Explain pricing as package-estimated and focus on ROI and practical integration strategies. Do not proactively explain brand pronunciation.";
+  "pran.ai deploys multilingual AI voice/chat agents for support, lead qualification, receptionist, and cart recovery. Keep answers practical, brief, and pricing-aware (package-estimated). Never invent plan names, prices, discounts, SLAs, integrations, or features not explicitly provided. If exact pricing/features are unknown, clearly say you don't have that exact detail and offer to connect the team for a scoped quote.";
+const INITIAL_GREETING_BY_LANGUAGE = {
+  en: "Hi! I'm your pran.ai assistant. How can I help you today?",
+  hi: "Namaste! Main aapki pran.ai assistant hoon. Main aaj aapki kya madad kar sakti hoon?",
+  te: "Namaste! Nenu mee pran.ai assistant ni. Nenu ippudu ela help cheyyagalanu?",
+  kn: "Namaskara! Naanu nimma pran.ai assistant. Iga nanu yenu sahaya maadabahudu?",
+  mr: "Namaskar! Mi pran.ai assistant boltey. Aata mi tumhala kashi madat karu?",
+  bn: "Nomoskar! Ami apnar pran.ai assistant. Ajke ami kivabe sahajjo korte pari?",
+};
 
 if (!DEEPGRAM_API_KEY || !GROQ_API_KEY || !CARTESIA_API_KEY) {
   console.error("Missing DEEPGRAM_API_KEY, GROQ_API_KEY, or CARTESIA_API_KEY.");
@@ -125,7 +133,7 @@ function sanitizeAgentMode(input) {
 
 function sanitizeCustomPrompt(input) {
   if (!input || typeof input !== "string") return "";
-  return input.trim().slice(0, 600);
+  return input.trim().slice(0, 300);
 }
 
 function enforceHindiFeminineFirstPerson(text) {
@@ -167,6 +175,18 @@ function shouldEndCallFromUserText(input) {
   ];
 
   return endCallPatterns.some((pattern) => pattern.test(text));
+}
+
+function getInitialGreeting(language) {
+  return INITIAL_GREETING_BY_LANGUAGE[language] || INITIAL_GREETING_BY_LANGUAGE.en;
+}
+
+function removeRepeatedGenericOpener(text) {
+  return text
+    .replace(/^\s*(how can i help you today[\s?!.,-]*)/i, "")
+    .replace(/^\s*(how may i help you today[\s?!.,-]*)/i, "")
+    .replace(/^\s*(aaj\s+main\s+aapki\s+kya\s+madad\s+kar\s+sakti\s+hoon[\s?!.,-]*)/i, "")
+    .trim();
 }
 
 function createDeepgramUrl(languageCode) {
@@ -470,6 +490,43 @@ wss.on("connection", (clientWs) => {
     );
   }
 
+  async function startInitialGreeting() {
+    const generationId = ++session.activeGenerationId;
+    const contextId = crypto.randomUUID();
+    const greetingRaw = getInitialGreeting(session.language);
+    const greeting =
+      session.language === "hi" ? enforceHindiFeminineFirstPerson(greetingRaw) : greetingRaw;
+
+    session.activeContextId = contextId;
+    session.isAssistantSpeaking = true;
+
+    sendJson(clientWs, { type: "assistant_response_start", contextId });
+    sendJson(clientWs, { type: "assistant_text_delta", delta: greeting, contextId });
+    sendJson(clientWs, { type: "assistant_text_final", text: greeting, contextId, wroteAudio: true });
+
+    try {
+      await sendTextChunkToCartesia({
+        contextId,
+        transcript: greeting,
+        continueStream: true,
+      });
+      if (session.closed || generationId !== session.activeGenerationId) return;
+      await sendTextChunkToCartesia({
+        contextId,
+        transcript: "",
+        continueStream: false,
+      });
+      session.conversation.push({ role: "assistant", content: greeting });
+      session.conversation = session.conversation.slice(-8);
+    } catch (error) {
+      session.isAssistantSpeaking = false;
+      sendJson(clientWs, {
+        type: "error",
+        error: error instanceof Error ? error.message : "Failed to stream greeting.",
+      });
+    }
+  }
+
   async function handleFinalTranscript(transcript, sttDurationSec = 0) {
     const generationId = ++session.activeGenerationId;
     const contextId = crypto.randomUUID();
@@ -491,6 +548,7 @@ wss.on("connection", (clientWs) => {
     const systemPrompt = process.env.VOICE_AGENT_SYSTEM_PROMPT || BASE_SYSTEM_PROMPT;
     const modePrompt = AGENT_MODE_PROMPTS[session.agentMode] || AGENT_MODE_PROMPTS.customer_support;
     const voiceEntry = VOICE_CONFIG[session.language] || VOICE_CONFIG.en;
+    const assistantTurnCount = session.conversation.filter((m) => m.role === "assistant").length;
     const languageLabel = voiceEntry.label;
     const voiceGender = voiceEntry.gender;
 
@@ -511,6 +569,11 @@ wss.on("connection", (clientWs) => {
           `Voice gender presentation is ${voiceGender}. In gendered languages, ALWAYS use first-person forms matching this gender and never switch. ` +
           "For Hindi/Hinglish feminine voice, always use feminine forms like 'मैं कर सकती हूँ', 'main kar sakti hoon', 'मैं गई थी'. Never use masculine forms like 'कर सकता हूँ' or 'मैं गया था'.",
       },
+      {
+        role: "system",
+        content:
+          "Do not fabricate facts. For pricing/features/integrations beyond known context, state uncertainty directly and offer a short next step to get exact details.",
+      },
       ...session.conversation.slice(-Math.max(0, MAX_HISTORY_MESSAGES)),
       { role: "user", content: transcript },
     ];
@@ -520,6 +583,7 @@ wss.on("connection", (clientWs) => {
     let assistantText = "";
     let tokenBuffer = "";
     let wroteAnyChunk = false;
+    let isFirstAssistantChunk = true;
 
     try {
       for await (const token of streamGroqTokens(messages)) {
@@ -538,12 +602,20 @@ wss.on("connection", (clientWs) => {
 
         const shouldFlush =
           /[.!?]\s*$/.test(tokenBuffer) ||
-          tokenBuffer.length >= 48 ||
+          tokenBuffer.length >= 34 ||
           token.includes("\n");
 
         if (shouldFlush) {
-          const ttsChunk =
+          let ttsChunk =
             session.language === "hi" ? enforceHindiFeminineFirstPerson(tokenBuffer) : tokenBuffer;
+          if (isFirstAssistantChunk && assistantTurnCount > 0) {
+            ttsChunk = removeRepeatedGenericOpener(ttsChunk);
+          }
+          isFirstAssistantChunk = false;
+          if (!ttsChunk.trim()) {
+            tokenBuffer = "";
+            continue;
+          }
           await sendTextChunkToCartesia({
             contextId,
             transcript: ttsChunk,
@@ -557,7 +629,13 @@ wss.on("connection", (clientWs) => {
       if (session.closed || generationId !== session.activeGenerationId) return;
 
       if (tokenBuffer.length > 0) {
-        const ttsChunk = session.language === "hi" ? enforceHindiFeminineFirstPerson(tokenBuffer) : tokenBuffer;
+        let ttsChunk = session.language === "hi" ? enforceHindiFeminineFirstPerson(tokenBuffer) : tokenBuffer;
+        if (isFirstAssistantChunk && assistantTurnCount > 0) {
+          ttsChunk = removeRepeatedGenericOpener(ttsChunk);
+        }
+        if (!ttsChunk.trim()) {
+          ttsChunk = "Got it.";
+        }
         await sendTextChunkToCartesia({
           contextId,
           transcript: ttsChunk,
@@ -735,12 +813,21 @@ wss.on("connection", (clientWs) => {
       session.customPrompt = sanitizeCustomPrompt(msg.customPrompt);
       session.conversation = [];
       connectDeepgram();
+      void ensureCartesiaConnection().catch((error) => {
+        sendJson(clientWs, {
+          type: "protocol_warning",
+          message: `Cartesia warm-start failed: ${error instanceof Error ? error.message : "unknown error"}`,
+        });
+      });
       sendJson(clientWs, {
         type: "ready",
         protocolVersion: PROTOCOL_VERSION,
         language: session.language,
         supportedLanguages: Object.keys(VOICE_CONFIG),
       });
+      if (msg.greetOnConnect !== false) {
+        void startInitialGreeting();
+      }
       return;
     }
 
@@ -786,5 +873,12 @@ wss.on("connection", (clientWs) => {
 
 httpServer.listen(PORT, () => {
   console.log(`Realtime voice server listening on :${PORT}`);
-  console.log(`WebSocket endpoint: ws://localhost:${PORT}/ws`);
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  const explicitPublicWsUrl = process.env.PUBLIC_VOICE_WS_URL;
+  const publicWsUrl = explicitPublicWsUrl
+    ? explicitPublicWsUrl
+    : railwayDomain
+      ? `wss://${railwayDomain}/ws`
+      : `ws://localhost:${PORT}/ws`;
+  console.log(`WebSocket endpoint: ${publicWsUrl}`);
 });

@@ -194,10 +194,11 @@ export function InteractiveVoiceWidget() {
   const wsReconnectTimerRef = useRef<number | null>(null);
   const wsManualCloseRef = useRef(false);
   const sessionActiveRef = useRef(false);
+  const shouldSendGreetingRef = useRef(true);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const micAudioContextRef = useRef<AudioContext | null>(null);
   const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const micProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const micProcessorRef = useRef<AudioWorkletNode | ScriptProcessorNode | null>(null);
   const micSilencerRef = useRef<GainNode | null>(null);
 
   const playbackSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
@@ -500,6 +501,7 @@ export function InteractiveVoiceWidget() {
     language: VoiceLanguageCode;
     agentMode: AgentMode;
     customPrompt: string;
+    greetOnConnect: boolean;
   }) => {
     const ws = new WebSocket(getRealtimeWsUrl());
     wsRef.current = ws;
@@ -514,8 +516,10 @@ export function InteractiveVoiceWidget() {
           language: config.language,
           agentMode: config.agentMode,
           customPrompt: config.customPrompt,
+          greetOnConnect: config.greetOnConnect,
         }),
       );
+      shouldSendGreetingRef.current = false;
     };
     ws.onmessage = (event) => {
       void handleServerMessage(event as MessageEvent<string>);
@@ -535,7 +539,10 @@ export function InteractiveVoiceWidget() {
       setStatus("processing");
       setErrorMessage(`Reconnecting voice stream... (${attempt}/${MAX_WS_RECONNECT_ATTEMPTS})`);
       wsReconnectTimerRef.current = window.setTimeout(() => {
-        connectRealtimeSocket(config);
+        connectRealtimeSocket({
+          ...config,
+          greetOnConnect: false,
+        });
       }, delayMs);
     };
   };
@@ -549,25 +556,48 @@ export function InteractiveVoiceWidget() {
     }
 
     const source = context.createMediaStreamSource(stream);
-    const processor = context.createScriptProcessor(4096, 1, 1);
     const silencer = context.createGain();
     silencer.gain.value = 0;
 
     micSourceRef.current = source;
-    micProcessorRef.current = processor;
     micSilencerRef.current = silencer;
 
-    processor.onaudioprocess = (event) => {
-      if (wsRef.current?.readyState !== WebSocket.OPEN) return;
-      const mono = event.inputBuffer.getChannelData(0);
-      const downsampled = downsampleTo16k(mono, context.sampleRate);
-      const pcm = floatToInt16PCM(downsampled);
-      const base64 = bytesToBase64(new Uint8Array(pcm.buffer));
-      wsRef.current.send(JSON.stringify({ type: "audio_chunk", audioBase64: base64 }));
-    };
+    const supportsAudioWorklet =
+      "audioWorklet" in context && typeof AudioWorkletNode !== "undefined";
 
-    source.connect(processor);
-    processor.connect(silencer);
+    if (supportsAudioWorklet) {
+      await context.audioWorklet.addModule("/audio-worklets/pcm-capture-processor.js");
+      const workletNode = new AudioWorkletNode(context, "pcm-capture-processor", {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        channelCount: 1,
+      });
+      workletNode.port.onmessage = (event: MessageEvent<Float32Array>) => {
+        if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+        const mono = event.data;
+        const downsampled = downsampleTo16k(mono, context.sampleRate);
+        const pcm = floatToInt16PCM(downsampled);
+        const base64 = bytesToBase64(new Uint8Array(pcm.buffer));
+        wsRef.current.send(JSON.stringify({ type: "audio_chunk", audioBase64: base64 }));
+      };
+      micProcessorRef.current = workletNode;
+      source.connect(workletNode);
+      workletNode.connect(silencer);
+    } else {
+      const processor = context.createScriptProcessor(2048, 1, 1);
+      processor.onaudioprocess = (event) => {
+        if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+        const mono = event.inputBuffer.getChannelData(0);
+        const downsampled = downsampleTo16k(mono, context.sampleRate);
+        const pcm = floatToInt16PCM(downsampled);
+        const base64 = bytesToBase64(new Uint8Array(pcm.buffer));
+        wsRef.current.send(JSON.stringify({ type: "audio_chunk", audioBase64: base64 }));
+      };
+      micProcessorRef.current = processor;
+      source.connect(processor);
+      processor.connect(silencer);
+    }
+
     silencer.connect(context.destination);
   };
 
@@ -601,6 +631,7 @@ export function InteractiveVoiceWidget() {
         language: selectedLanguage,
         agentMode,
         customPrompt,
+        greetOnConnect: shouldSendGreetingRef.current,
       });
 
       await streamMicToWebSocket(stream);
@@ -643,6 +674,7 @@ export function InteractiveVoiceWidget() {
 
     clearAssistantPlaybackQueue();
     assistantStreamActiveRef.current = false;
+    shouldSendGreetingRef.current = true;
     setIsSessionActive(false);
     setStatus("idle");
   };
